@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: shop-backend
+    env: php
+    buildCommand: composer install --no-dev && php artisan migrate --force && php artisan db:seed --force
+    startCommand: php artisan serve --host 0.0.0.0 --port 10000
+    envVars:
+      - key: APP_NAME
+        value: Shop
+      - key: APP_ENV
+        value: production
+      - key: APP_KEY
+        generateValue: true
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        value: https://your-render-app.onrender.com
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        value: your-db-host
+      - key: DB_PORT
+        value: 3306
+      - key: DB_DATABASE
+        value: your-db-name
+      - key: DB_USERNAME
+        value: your-db-user
+      - key: DB_PASSWORD
+        value: your-db-password
+      - key: SESSION_DRIVER
+        value: file
+      - key: SANCTUM_STATEFUL_DOMAINS
+        value: your-frontend.vercel.app
+      - key: CLOUDINARY_URL
+        value: your-cloudinary-url
+      - key: GOOGLE_CLIENT_ID
+        value: your-google-client-id
+      - key: GOOGLE_CLIENT_SECRET
+        value: your-google-client-secret
+      - key: GOOGLE_REDIRECT_URI
+        value: https://your-render-app.onrender.com/api/auth/google/callback
+      - key: OPENAI_API_KEY
+        value: your-openai-api-key
