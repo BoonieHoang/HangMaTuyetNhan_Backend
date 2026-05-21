@@ -16,7 +16,7 @@ try {
     $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
     $host = env("MYSQLHOST", env("DB_HOST", "127.0.0.1"));
-    $port = env("MYSQLPORT", env("DB_PORT", "3306"));
+    $port = env("MYSQLPORT", env("DB_PORT", "3307"));
     $db = env("MYSQLDATABASE", env("DB_DATABASE"));
     $user = env("MYSQLUSER", env("DB_USERNAME"));
     $pass = env("MYSQLPASSWORD", env("DB_PASSWORD"));
