@@ -1,0 +1,23 @@
+[phases.setup]
+nixPkgs = [
+  "php82",
+  "php82Extensions.pdo",
+  "php82Extensions.pdo_mysql",
+  "php82Extensions.mbstring",
+  "php82Extensions.tokenizer",
+  "php82Extensions.xml",
+  "php82Extensions.ctype",
+  "php82Extensions.fileinfo",
+  "php82Extensions.bcmath",
+  "php82Extensions.curl",
+  "composer"
+]
+
+[phases.build]
+cmds = [
+  "composer install --no-dev --optimize-autoloader",
+  "chmod +x railway-pre-deploy.sh"
+]
+
+[start]
+cmd = "bash railway-pre-deploy.sh && frankenphp php-server --root=public/ --listen=:${PORT:-8080}"
