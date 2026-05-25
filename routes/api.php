@@ -35,6 +35,10 @@ Route::get('/purposes', [PurposeController::class, 'index']);
 Route::get('/rituals', [App\Http\Controllers\Api\Customer\RitualController::class, 'index']);
 Route::get('/rituals/{slug}', [App\Http\Controllers\Api\Customer\RitualController::class, 'show']);
 Route::post('/chatbot', [\App\Http\Controllers\Api\Customer\ChatbotController::class, 'chat'])->middleware('throttle:10,1');
+Route::get('/shipping-fee', function () {
+    $fee = \App\Models\SystemConfig::where('key', 'shipping_fee_default')->value('value') ?? 20000;
+    return response()->json(['shipping_fee' => (int) $fee]);
+});
 
 // All Authenticated Users
 Route::middleware(['auth:sanctum', 'check.account.status'])->group(function () {

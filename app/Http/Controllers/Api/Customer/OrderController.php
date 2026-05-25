@@ -64,7 +64,8 @@ class OrderController extends Controller
 
         $order = \Illuminate\Support\Facades\DB::transaction(function () use ($request, $cart) {
             $subtotal = $this->cartService->getCartTotal($cart);
-            $shippingFee = $request->shipping_method === 'ship' ? 15000 : 0;
+            $defaultFee = (int) (\App\Models\SystemConfig::where('key', 'shipping_fee_default')->value('value') ?? 20000);
+            $shippingFee = $request->shipping_method === 'ship' ? $defaultFee : 0;
 
             $order = Order::create([
                 'order_code' => $this->orderCodeService->generate(),

@@ -116,10 +116,11 @@ class CheckoutController extends Controller
         $cart = $this->cartService->getOrCreateCart($request);
         $total = $this->cartService->getCartTotal($cart);
         $shippingMethod = $request->query('shipping_method', 'ship');
-        $shippingFee = $shippingMethod === 'ship' ? 15000 : 0;
+        $defaultFee = (int) (\App\Models\SystemConfig::where('key', 'shipping_fee_default')->value('value') ?? 20000);
+        $shippingFee = $shippingMethod === 'ship' ? $defaultFee : 0;
 
         $qrUrl = $this->vietQRService->generateQRUrl($total + $shippingFee, "THANH TOAN DON HANG");
 
-        return response()->json(['qr_url' => $qrUrl]);
+        return response()->json(['qr_url' => $qrUrl, 'shipping_fee' => $shippingFee]);
     }
 }

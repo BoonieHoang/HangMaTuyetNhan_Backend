@@ -23,8 +23,6 @@ class SystemConfigController extends Controller
             'configs.bank_account_number' => 'nullable|string',
             'configs.bank_account_name' => 'nullable|string',
             'configs.shipping_fee_default' => 'nullable|numeric',
-            'configs.store_name' => 'nullable|string',
-            'configs.store_phone' => 'nullable|string',
         ]);
 
         foreach ($request->configs as $key => $value) {
