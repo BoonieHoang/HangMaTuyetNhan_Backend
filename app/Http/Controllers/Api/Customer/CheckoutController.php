@@ -120,8 +120,19 @@ class CheckoutController extends Controller
         $defaultFee = (int) (\App\Models\SystemConfig::where('key', 'shipping_fee_default')->value('value') ?? 20000);
         $shippingFee = $shippingMethod === 'ship' ? $defaultFee : 0;
 
+        $configs = \App\Models\SystemConfig::pluck('value', 'key')->toArray();
+        $bankCode = $configs['bank_code'] ?? '';
+        $accountNumber = $configs['bank_account_number'] ?? '';
+        $accountName = $configs['bank_account_name'] ?? '';
+
         $qrUrl = $this->vietQRService->generateQRUrl($total + $shippingFee, "THANH TOAN DON HANG");
 
-        return response()->json(['qr_url' => $qrUrl, 'shipping_fee' => $shippingFee]);
+        return response()->json([
+            'qr_url' => $qrUrl,
+            'shipping_fee' => $shippingFee,
+            'bank_code' => $bankCode,
+            'bank_account_number' => $accountNumber,
+            'bank_account_name' => $accountName,
+        ]);
     }
 }
