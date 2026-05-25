@@ -17,7 +17,8 @@ class SystemConfigSeeder extends Seeder
         ];
 
         foreach ($defaults as $item) {
-            SystemConfig::updateOrCreate(
+            // firstOrCreate: chỉ tạo nếu key chưa tồn tại, KHÔNG ghi đè giá trị đã được admin cấu hình
+            SystemConfig::firstOrCreate(
                 ['key' => $item['key']],
                 ['value' => $item['value'], 'label' => $item['label'], 'group' => $item['group']]
             );

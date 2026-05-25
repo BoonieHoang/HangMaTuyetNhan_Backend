@@ -9,9 +9,8 @@ class VietQRService
 {
     public function generateQRUrl($amount, $content): ?string
     {
-        $configs = Cache::remember('system_configs', 3600, function () {
-            return SystemConfig::pluck('value', 'key')->toArray();
-        });
+        // Đọc thẳng từ DB, không cache — đảm bảo cài đặt admin có hiệu lực ngay
+        $configs = SystemConfig::pluck('value', 'key')->toArray();
 
         $bankCode = $configs['bank_code'] ?? '';
         $accountNumber = $configs['bank_account_number'] ?? '';
