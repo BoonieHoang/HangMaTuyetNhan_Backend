@@ -12,6 +12,7 @@ use App\Services\CartService;
 use App\Services\OrderCodeService;
 use App\Services\VietQRService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 
 class CheckoutController extends Controller
 {
