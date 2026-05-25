@@ -39,6 +39,9 @@ Route::get('/shipping-fee', function () {
     $fee = \App\Models\SystemConfig::where('key', 'shipping_fee_default')->value('value') ?? 20000;
     return response()->json(['shipping_fee' => (int) $fee]);
 });
+Route::get('/debug-configs', function () {
+    return response()->json(\App\Models\SystemConfig::all());
+});
 
 // All Authenticated Users
 Route::middleware(['auth:sanctum', 'check.account.status'])->group(function () {
