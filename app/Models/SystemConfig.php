@@ -10,6 +10,7 @@ class SystemConfig extends Model
         'key',
         'value',
         'label',
+        'group',
     ];
 
     protected $casts = [
