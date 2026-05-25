@@ -61,7 +61,7 @@ class CheckoutController extends Controller
                 'total_amount' => $totalAmount + $shippingFee,
             ]);
 
-            $transferContent = $order->order_code;
+            $transferContent = "THANH TOAN DON HANG " . $order->order_code;
             $qrUrl = null;
 
             if ($request->payment_method === 'bank_transfer') {
