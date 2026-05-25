@@ -28,12 +28,10 @@ class SystemConfigController extends Controller
         ]);
 
         foreach ($request->configs as $key => $value) {
-            if ($value !== null) {
-                SystemConfig::updateOrCreate(
-                    ['key' => $key],
-                    ['value' => $value, 'updated_at' => now()]
-                );
-            }
+            SystemConfig::updateOrCreate(
+                ['key' => $key],
+                ['value' => $value ?? '']
+            );
         }
 
         Cache::forget('system_configs');
