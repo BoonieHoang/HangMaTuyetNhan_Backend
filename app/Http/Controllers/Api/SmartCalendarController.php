@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Holiday;
+use App\Models\Product;
 use App\Services\OpenAIService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -13,51 +13,42 @@ class SmartCalendarController extends Controller
     public function index(OpenAIService $aiService)
     {
         try {
-            $data = Cache::remember('smart_calendar_v2', 43200, function () use ($aiService) {
-                // 1. Get all holidays from DB with up to 3 active products each
-                $holidays = Holiday::with([
-                    'products' => fn($q) => $q->active()
-                        ->with(['images', 'category'])
-                        ->orderBy('views', 'desc')
-                        ->limit(3),
-                ])->get();
+            // Sử dụng cache_v3 để cập nhật dữ liệu ngày lễ AI và sản phẩm mới
+            $data = Cache::remember('smart_calendar_v3', 43200, function () use ($aiService) {
+                // 1. Đề cử danh sách ngày lễ lịch âm gần nhất từ AI
+                $aiHolidays = $aiService->getUpcomingLunarHolidays(3);
 
-                if ($holidays->isEmpty()) {
+                if (empty($aiHolidays)) {
                     return [];
                 }
 
-                // 2. Ask Gemini to enrich: next occurrence date + lunar label + description
-                $enriched = $aiService->enrichHolidays($holidays->toArray());
+                // 2. Lấy danh sách sản phẩm mới nhất đang hoạt động từ DB
+                $newProducts = Product::active()
+                    ->with(['images', 'category'])
+                    ->orderBy('created_at', 'desc')
+                    ->limit(4)
+                    ->get();
 
-                if (empty($enriched)) {
-                    return [];
-                }
+                $productsData = $newProducts->map(fn($p) => [
+                    'id'    => $p->id,
+                    'name'  => $p->name,
+                    'slug'  => $p->slug,
+                    'price' => (int) $p->price,
+                    'image' => $p->primary_image_url,
+                ])->values()->toArray();
 
-                // 3. Merge AI-generated metadata with DB products
-                $holidayMap = $holidays->keyBy('id');
-
-                return collect($enriched)
-                    ->map(function ($item) use ($holidayMap) {
-                        $holiday = $holidayMap[$item['id']] ?? null;
-                        if (!$holiday) return null;
-
+                // 3. Kết xuất thông tin ngày lễ động kết hợp với sản phẩm mới
+                return collect($aiHolidays)
+                    ->map(function ($item) use ($productsData) {
                         return [
-                            'id'          => $holiday->id,
-                            'name'        => $holiday->name,
-                            'lunarLabel'  => $item['lunarLabel']  ?? '',
-                            'nextDate'    => $item['nextDate']    ?? null,
+                            'id'          => null,
+                            'name'        => $item['name'] ?? '',
+                            'lunarLabel'  => $item['lunarLabel'] ?? '',
+                            'nextDate'    => $item['nextDate'] ?? null,
                             'description' => $item['description'] ?? '',
-                            'products'    => $holiday->products->map(fn($p) => [
-                                'id'    => $p->id,
-                                'name'  => $p->name,
-                                'slug'  => $p->slug,
-                                'price' => (int) $p->price,
-                                'image' => $p->primary_image_url,
-                            ])->values()->toArray(),
+                            'products'    => $productsData,
                         ];
                     })
-                    ->filter()
-                    ->values()
                     ->toArray();
             });
 

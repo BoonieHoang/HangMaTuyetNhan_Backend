@@ -230,5 +230,70 @@ PROMPT;
             return [];
         }
     }
+
+    /**
+     * Propose upcoming Vietnamese traditional lunar holidays using AI.
+     * Returns an array of holidays, each with:
+     *   - name
+     *   - nextDate (Gregorian YYYY-MM-DD)
+     *   - lunarLabel (e.g. "15/07 Âm lịch")
+     *   - description
+     */
+    public function getUpcomingLunarHolidays(int $limit = 3): array
+    {
+        if (empty($this->apiKey)) return [];
+
+        $now     = \Carbon\Carbon::now('Asia/Ho_Chi_Minh');
+        $dateStr = $now->format('d/m/Y');
+
+        $prompt = "Hôm nay là ngày dương lịch: {$dateStr}.\n"
+                . "Hãy đề cử danh sách gồm đúng {$limit} ngày lễ truyền thống Việt Nam theo lịch âm sắp tới gần nhất (bắt đầu từ ngày hôm nay trở đi).\n"
+                . "Lưu ý bao gồm cả ngày Rằm hoặc Mùng Một âm lịch sắp tới gần nhất nếu nó là ngày cúng lễ quan trọng tiếp theo.\n"
+                . "Với mỗi ngày lễ, hãy trả về:\n"
+                . "1. name: Tên ngày lễ (ví dụ: 'Tết Đoan Ngọ', 'Rằm tháng Bảy (cúng Cô Hồn)', 'Mùng Một hàng tháng').\n"
+                . "2. nextDate: ngày dương lịch tiếp theo tương ứng của ngày lễ đó, định dạng YYYY-MM-DD.\n"
+                . "3. lunarLabel: nhãn ngày âm lịch tương ứng, ví dụ '05/05 Âm lịch', '15/07 Âm lịch'.\n"
+                . "4. description: 1-2 câu mô tả ngắn gọn ý nghĩa ngày lễ và gợi ý lễ vật cần chuẩn bị.";
+
+        try {
+            $url      = "models/{$this->model}:generateContent?key=" . $this->apiKey;
+            $response = $this->client->post($url, [
+                'json' => [
+                    'contents'         => [['role' => 'user', 'parts' => [['text' => $prompt]]]],
+                    'generationConfig' => [
+                        'responseMimeType' => 'application/json',
+                        'responseSchema'   => [
+                            'type'       => 'OBJECT',
+                            'properties' => [
+                                'holidays' => [
+                                    'type'  => 'ARRAY',
+                                    'items' => [
+                                        'type'       => 'OBJECT',
+                                        'properties' => [
+                                            'name'        => ['type' => 'STRING'],
+                                            'nextDate'    => ['type' => 'STRING'],
+                                            'lunarLabel'  => ['type' => 'STRING'],
+                                            'description' => ['type' => 'STRING'],
+                                        ],
+                                        'required' => ['name', 'nextDate', 'lunarLabel', 'description'],
+                                    ],
+                                ],
+                            ],
+                            'required' => ['holidays'],
+                        ],
+                    ],
+                ],
+            ]);
+
+            $result  = json_decode($response->getBody()->getContents(), true);
+            $rawText = $result['candidates'][0]['content']['parts'][0]['text'] ?? '{}';
+            $parsed  = json_decode($rawText, true);
+
+            return $parsed['holidays'] ?? [];
+        } catch (\Exception $e) {
+            Log::error('Gemini getUpcomingLunarHolidays Error: ' . $e->getMessage());
+            return [];
+        }
+    }
 }
 
