@@ -17,7 +17,7 @@ class SmartCalendarController extends Controller
                 // 1. Get all holidays from DB with up to 3 active products each
                 $holidays = Holiday::with([
                     'products' => fn($q) => $q->active()
-                        ->with(['primaryImage', 'category'])
+                        ->with(['images', 'category'])
                         ->orderBy('views', 'desc')
                         ->limit(3),
                 ])->get();
