@@ -37,8 +37,9 @@ class ChatbotController extends Controller
         ]);
 
         return response()->json([
-            'response' => $result['response'],
-            'tokens_used' => $result['tokens_used'],
+            'response'           => $result['response'],
+            'suggested_products' => $result['suggested_products'] ?? [],
+            'tokens_used'        => $result['tokens_used'],
         ]);
     }
 }
