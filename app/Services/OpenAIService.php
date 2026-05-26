@@ -158,8 +158,8 @@ PROMPT;
             ];
         } catch (\Exception $e) {
             Log::error('Gemini API Error: ' . $e->getMessage());
-            $errMsg = config('app.debug') 
-                ? 'Lỗi kết nối Gemini: ' . $e->getMessage() 
+            $errMsg = config('app.debug')
+                ? 'Lỗi kết nối Gemini: ' . $e->getMessage()
                 : 'Xin lỗi, tôi đang gặp sự cố kết nối. Vui lòng thử lại sau.';
             return [
                 'response'           => $errMsg,
@@ -168,4 +168,67 @@ PROMPT;
             ];
         }
     }
+
+    /**
+     * Enrich a list of DB holidays with AI-generated:
+     *   - nextDate      : next upcoming Gregorian date (YYYY-MM-DD)
+     *   - lunarLabel    : short lunar label (e.g. "15/07 Âm lịch")
+     *   - description   : 1-2 sentence description + ritual tips
+     */
+    public function enrichHolidays(array $holidays): array
+    {
+        if (empty($holidays) || empty($this->apiKey)) return [];
+
+        $now      = \Carbon\Carbon::now('Asia/Ho_Chi_Minh');
+        $dateStr  = $now->format('d/m/Y');
+        $list     = collect($holidays)->map(fn($h) => ['id' => $h['id'], 'name' => $h['name']])->toJson(JSON_UNESCAPED_UNICODE);
+
+        $prompt = "Hôm nay là {$dateStr} (dương lịch). Đây là danh sách các ngày lễ truyền thống từ cơ sở dữ liệu của cửa hàng đồ lễ Tuyết Nhàn:\n{$list}\n\n"
+                . "Với MỖI ngày lễ trên, hãy tính toán chính xác và trả về:\n"
+                . "1. nextDate: ngày dương lịch gần nhất sắp đến (từ ngày mai trở đi), format YYYY-MM-DD.\n"
+                . "2. lunarLabel: nhãn âm lịch ngắn gọn, ví dụ '15/07 Âm lịch' hoặc '01/01 Âm lịch'.\n"
+                . "3. description: 1-2 câu mô tả ý nghĩa ngày lễ và gợi ý cần chuẩn bị gì.\n"
+                . "Lưu ý: Mùng Một và Rằm xảy ra hàng tháng — hãy tính tháng âm lịch sắp tới gần nhất.";
+
+        try {
+            $url      = "models/{$this->model}:generateContent?key=" . $this->apiKey;
+            $response = $this->client->post($url, [
+                'json' => [
+                    'contents'         => [['role' => 'user', 'parts' => [['text' => $prompt]]]],
+                    'generationConfig' => [
+                        'responseMimeType' => 'application/json',
+                        'responseSchema'   => [
+                            'type'       => 'OBJECT',
+                            'properties' => [
+                                'holidays' => [
+                                    'type'  => 'ARRAY',
+                                    'items' => [
+                                        'type'       => 'OBJECT',
+                                        'properties' => [
+                                            'id'          => ['type' => 'INTEGER'],
+                                            'nextDate'    => ['type' => 'STRING'],
+                                            'lunarLabel'  => ['type' => 'STRING'],
+                                            'description' => ['type' => 'STRING'],
+                                        ],
+                                        'required' => ['id', 'nextDate', 'lunarLabel', 'description'],
+                                    ],
+                                ],
+                            ],
+                            'required' => ['holidays'],
+                        ],
+                    ],
+                ],
+            ]);
+
+            $result  = json_decode($response->getBody()->getContents(), true);
+            $rawText = $result['candidates'][0]['content']['parts'][0]['text'] ?? '{}';
+            $parsed  = json_decode($rawText, true);
+
+            return $parsed['holidays'] ?? [];
+        } catch (\Exception $e) {
+            Log::error('Gemini enrichHolidays Error: ' . $e->getMessage());
+            return [];
+        }
+    }
 }
+

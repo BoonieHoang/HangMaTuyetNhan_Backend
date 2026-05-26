@@ -35,6 +35,7 @@ Route::get('/purposes', [PurposeController::class, 'index']);
 Route::get('/rituals', [App\Http\Controllers\Api\Customer\RitualController::class, 'index']);
 Route::get('/rituals/{slug}', [App\Http\Controllers\Api\Customer\RitualController::class, 'show']);
 Route::post('/chatbot', [\App\Http\Controllers\Api\Customer\ChatbotController::class, 'chat'])->middleware('throttle:20,1');
+Route::get('/smart-calendar', [\App\Http\Controllers\Api\SmartCalendarController::class, 'index'])->middleware('throttle:5,1');
 Route::get('/shipping-fee', function () {
     $fee = \App\Models\SystemConfig::where('key', 'shipping_fee_default')->value('value') ?? 20000;
     return response()->json(['shipping_fee' => (int) $fee]);
