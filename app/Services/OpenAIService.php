@@ -246,14 +246,20 @@ PROMPT;
         $now     = \Carbon\Carbon::now('Asia/Ho_Chi_Minh');
         $dateStr = $now->format('d/m/Y');
 
+        $catalog      = $this->getProductCatalog();
+        $catalogLines = $this->buildCatalogLines($catalog);
+
         $prompt = "Hôm nay là ngày dương lịch: {$dateStr}.\n"
+                . "Đây là danh mục sản phẩm của cửa hàng đồ lễ Tuyết Nhàn:\n"
+                . "{$catalogLines}\n\n"
                 . "Hãy đề cử danh sách gồm đúng {$limit} ngày lễ truyền thống Việt Nam theo lịch âm sắp tới gần nhất (bắt đầu từ ngày hôm nay trở đi).\n"
                 . "Lưu ý bao gồm cả ngày Rằm hoặc Mùng Một âm lịch sắp tới gần nhất nếu nó là ngày cúng lễ quan trọng tiếp theo.\n"
                 . "Với mỗi ngày lễ, hãy trả về:\n"
                 . "1. name: Tên ngày lễ (ví dụ: 'Tết Đoan Ngọ', 'Rằm tháng Bảy (cúng Cô Hồn)', 'Mùng Một hàng tháng').\n"
                 . "2. nextDate: ngày dương lịch tiếp theo tương ứng của ngày lễ đó, định dạng YYYY-MM-DD.\n"
                 . "3. lunarLabel: nhãn ngày âm lịch tương ứng, ví dụ '05/05 Âm lịch', '15/07 Âm lịch'.\n"
-                . "4. description: 1-2 câu mô tả ngắn gọn ý nghĩa ngày lễ và gợi ý lễ vật cần chuẩn bị.";
+                . "4. description: 1-2 câu mô tả ngắn gọn ý nghĩa ngày lễ và gợi ý lễ vật cần chuẩn bị.\n"
+                . "5. product_ids: mảng chứa từ 2 đến 4 ID sản phẩm phù hợp nhất với ngày lễ này từ danh mục sản phẩm trên.";
 
         try {
             $url      = "models/{$this->model}:generateContent?key=" . $this->apiKey;
@@ -274,8 +280,9 @@ PROMPT;
                                             'nextDate'    => ['type' => 'STRING'],
                                             'lunarLabel'  => ['type' => 'STRING'],
                                             'description' => ['type' => 'STRING'],
+                                            'product_ids' => ['type' => 'ARRAY', 'items' => ['type' => 'INTEGER']],
                                         ],
-                                        'required' => ['name', 'nextDate', 'lunarLabel', 'description'],
+                                        'required' => ['name', 'nextDate', 'lunarLabel', 'description', 'product_ids'],
                                     ],
                                 ],
                             ],
