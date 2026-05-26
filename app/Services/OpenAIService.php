@@ -16,7 +16,7 @@ class OpenAIService
     public function __construct()
     {
         $this->apiKey = env('GEMINI_API_KEY') ?: env('OPENAI_API_KEY');
-        $this->model  = env('GEMINI_MODEL', 'gemini-1.5-flash-latest');
+        $this->model  = env('GEMINI_MODEL', 'gemini-flash-latest');
         $this->client = new Client([
             'base_uri' => 'https://generativelanguage.googleapis.com/v1beta/',
             'headers'  => ['Content-Type' => 'application/json'],
@@ -158,8 +158,11 @@ PROMPT;
             ];
         } catch (\Exception $e) {
             Log::error('Gemini API Error: ' . $e->getMessage());
+            $errMsg = config('app.debug') 
+                ? 'Lỗi kết nối Gemini: ' . $e->getMessage() 
+                : 'Xin lỗi, tôi đang gặp sự cố kết nối. Vui lòng thử lại sau.';
             return [
-                'response'           => 'Xin lỗi, tôi đang gặp sự cố kết nối. Vui lòng thử lại sau.',
+                'response'           => $errMsg,
                 'suggested_products' => [],
                 'tokens_used'        => 0,
             ];
