@@ -38,6 +38,12 @@ return [
         'max_tokens' => (int) env('OPENAI_MAX_TOKENS', 500),
     ],
 
+    // ─── Gemini ──────────────────────────────────────────────
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model'   => env('GEMINI_MODEL', 'gemini-flash-latest'),
+    ],
+
     // ─── VietQR ──────────────────────────────────────────────
     'vietqr' => [
         'base_url' => env('VIETQR_BASE_URL', 'https://img.vietqr.io/image'),

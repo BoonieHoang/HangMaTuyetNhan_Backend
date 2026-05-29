@@ -25,7 +25,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth')->plainTextToken;
 
         return response()->json([
-            'user' => new UserResource($user),
+            'user' => new UserResource($user->refresh()),
             'token' => $token,
         ], 201);
     }
@@ -53,7 +53,12 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $token = $request->user()->currentAccessToken();
+        if ($token) {
+            $token->delete();
+        } else {
+            $request->user()->tokens()->delete();
+        }
 
         return response()->json(['message' => 'Đăng xuất thành công']);
     }

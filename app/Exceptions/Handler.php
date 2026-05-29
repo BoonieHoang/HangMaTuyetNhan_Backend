@@ -56,6 +56,14 @@ class Handler extends ExceptionHandler
                     return response()->json(['success' => false, 'message' => 'Too Many Requests.', 'errors' => (object)[]], 429);
                 }
                 
+                if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $e->getMessage(),
+                        'errors' => ['details' => $e->getMessage()]
+                    ], $e->getStatusCode());
+                }
+                
                 return response()->json(['success' => false, 'message' => 'Server Error.', 'errors' => ['details' => $e->getMessage()]], 500);
             }
         });
