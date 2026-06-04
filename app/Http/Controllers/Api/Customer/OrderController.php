@@ -72,7 +72,7 @@ class OrderController extends Controller
                 'user_id' => $request->user()->id,
                 'fullname' => $request->fullname,
                 'phone' => $request->phone,
-                'email' => $request->user()->email,
+                'email' => $request->user()->email ?? '',
                 'ship_address' => $request->ship_address,
                 'note' => $request->note,
                 'payment_method' => $request->payment_method,
