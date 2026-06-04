@@ -31,13 +31,6 @@ return [
         'redirect'      => env('GOOGLE_REDIRECT_URI'),
     ],
 
-    // ─── OpenAI ──────────────────────────────────────────────
-    'openai' => [
-        'api_key'    => env('OPENAI_API_KEY'),
-        'model'      => env('OPENAI_MODEL', 'gpt-3.5-turbo'),
-        'max_tokens' => (int) env('OPENAI_MAX_TOKENS', 500),
-    ],
-
     // ─── Gemini ──────────────────────────────────────────────
     'gemini' => [
         'api_key' => env('GEMINI_API_KEY'),
