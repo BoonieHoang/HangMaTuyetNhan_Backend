@@ -44,6 +44,27 @@ Route::get('/shipping-fee', function () {
 // PayOS Webhook — public, không cần auth (PayOS gửi từ server của họ)
 Route::post('/payos/webhook', [PayOSWebhookController::class, 'handleWebhook']);
 
+// Debug endpoints
+Route::get('/payos/routes', function () {
+    return response()->json(collect(\Route::getRoutes())->map(function ($route) {
+        return [
+            'method' => implode('|', $route->methods()),
+            'uri' => $route->uri(),
+        ];
+    }));
+});
+
+Route::get('/payos/logs', function () {
+    $path = storage_path('logs/laravel.log');
+    if (!file_exists($path)) {
+        return response()->json(['message' => 'No log file found.']);
+    }
+    $content = file_get_contents($path);
+    $lines = explode("\n", $content);
+    $lastLines = array_slice($lines, -150);
+    return response()->json($lastLines);
+});
+
 // All Authenticated Users
 Route::middleware(['auth:sanctum', 'check.account.status'])->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
