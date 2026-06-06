@@ -162,6 +162,55 @@ class OrderController extends Controller
         ]);
     }
 
+    public function renewPayment(Request $request, $code)
+    {
+        $order = Order::where('user_id', $request->user()->id)
+            ->where('order_code', $code)
+            ->with('payment')
+            ->firstOrFail();
+
+        if ($order->status !== 'pending') {
+            return response()->json(['message' => 'Đơn hàng không ở trạng thái chờ xử lý.'], 400);
+        }
+
+        if ($order->payment_method !== 'bank_transfer') {
+            return response()->json(['message' => 'Đơn hàng này không thanh toán qua chuyển khoản.'], 400);
+        }
+
+        if (!$order->payment || $order->payment->status !== 'pending') {
+            return response()->json(['message' => 'Không thể tạo lại link thanh toán.'], 400);
+        }
+
+        try {
+            $transferContent = 'TToan ' . $order->order_code;
+            $paymentLink = $this->payOSService->createPaymentLink(
+                $order->order_code,
+                (int) $order->total_amount,
+                $transferContent
+            );
+
+            $checkoutUrl = $paymentLink['checkoutUrl'] ?? null;
+            $qrCode      = $paymentLink['qrCode'] ?? null;
+
+            // Cập nhật link mới vào DB
+            $order->payment->update([
+                'payos_checkout_url' => $checkoutUrl,
+                'payos_qr_code'      => $qrCode,
+            ]);
+
+            return response()->json([
+                'payos_checkout_url' => $checkoutUrl,
+                'payos_qr_code'      => $qrCode,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('[Order] Tạo lại link PayOS thất bại', [
+                'order_code' => $order->order_code,
+                'error'      => $e->getMessage(),
+            ]);
+            return response()->json(['message' => 'Không thể tạo link thanh toán. Vui lòng thử lại sau.'], 500);
+        }
+    }
+
     public function cancel(Request $request, $code)
     {
         $order = Order::where('user_id', $request->user()->id)

@@ -66,6 +66,7 @@ Route::middleware(['auth:sanctum', 'check.account.status', 'role:customer'])->gr
     Route::get('/orders/{code}', [CustomerOrderController::class, 'show']);
     Route::patch('/orders/{code}/cancel', [CustomerOrderController::class, 'cancel']);
     Route::get('/orders/{code}/qr', [CustomerOrderController::class, 'showQR']);
+    Route::post('/orders/{code}/renew-payment', [CustomerOrderController::class, 'renewPayment']);
 
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::patch('/profile', [ProfileController::class, 'update']);
