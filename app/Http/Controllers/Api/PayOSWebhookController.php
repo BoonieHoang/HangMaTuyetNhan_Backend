@@ -53,10 +53,11 @@ class PayOSWebhookController extends Controller
 
             Log::info('[PayOS Webhook] Xác thực chữ ký thành công', ['verified_data' => $data]);
 
-            // Khi PayOS gửi webhook xác thực endpoint (test), code là 0 — bỏ qua
+            // Khi PayOS gửi webhook xác thực endpoint (test), code là 0 hoặc 123 — bỏ qua và trả về 200
             $orderCode = $data['orderCode'] ?? null;
-            if ($orderCode === 0 || $orderCode === null) {
-                Log::info('[PayOS Webhook] Nhận test webhook xác thực endpoint.');
+            $description = $data['description'] ?? '';
+            if ($orderCode === 0 || $orderCode === 123 || $orderCode === null || $description === 'VQRIO123') {
+                Log::info('[PayOS Webhook] Nhận test webhook xác thực endpoint.', ['orderCode' => $orderCode]);
                 return response()->json(['message' => 'Webhook verified'], 200);
             }
 
@@ -66,10 +67,10 @@ class PayOSWebhookController extends Controller
                 ->first();
 
             if (!$order) {
-                Log::error('[PayOS Webhook] Không tìm thấy đơn hàng khớp với payos_order_code', [
+                Log::warning('[PayOS Webhook] Không tìm thấy đơn hàng khớp với payos_order_code, phản hồi 200 để tránh PayOS thử lại', [
                     'payos_order_code' => $orderCode
                 ]);
-                return response()->json(['message' => 'Order not found'], 404);
+                return response()->json(['message' => 'Order not found but webhook acknowledged'], 200);
             }
 
             Log::info('[PayOS Webhook] Đã tìm thấy đơn hàng tương ứng', [
