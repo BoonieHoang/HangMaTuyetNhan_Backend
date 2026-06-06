@@ -80,6 +80,12 @@ Route::get('/payos/system-logs', function () {
     $lastLines = array_slice($lines, -150);
     return response()->json($lastLines);
 });
+
+Route::get('/payos/debug-orders', function () {
+    return response()->json(\App\Models\Order::orderBy('id', 'desc')->take(10)->get([
+        'id', 'order_code', 'payos_order_code', 'status'
+    ]));
+});
 Route::middleware(['auth:sanctum', 'check.account.status'])->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
