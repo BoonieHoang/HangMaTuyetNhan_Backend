@@ -26,6 +26,17 @@ class PayOSWebhookController extends Controller
     {
         $webhookBody = $request->all();
         
+        // Ghi log ra file tuỳ chỉnh để phục vụ debug trên production
+        $logData = [
+            'time' => now()->toIso8601String(),
+            'ip' => $request->ip(),
+            'url' => $request->fullUrl(),
+            'method' => $request->method(),
+            'headers' => $request->headers->all(),
+            'body' => $webhookBody,
+        ];
+        @file_put_contents(storage_path('logs/payos_webhook.log'), json_encode($logData) . "\n", FILE_APPEND);
+
         Log::info('[PayOS Webhook] Nhận request webhook từ PayOS', [
             'ip'   => $request->ip(),
             'body' => $webhookBody

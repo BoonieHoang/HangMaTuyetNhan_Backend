@@ -55,14 +55,19 @@ Route::get('/payos/routes', function () {
 });
 
 Route::get('/payos/logs', function () {
-    $path = storage_path('logs/laravel.log');
+    $path = storage_path('logs/payos_webhook.log');
     if (!file_exists($path)) {
-        return response()->json(['message' => 'No log file found.']);
+        return response()->json(['message' => 'No webhook log file found.']);
     }
     $content = file_get_contents($path);
-    $lines = explode("\n", $content);
-    $lastLines = array_slice($lines, -150);
-    return response()->json($lastLines);
+    $lines = explode("\n", trim($content));
+    $logs = [];
+    foreach ($lines as $line) {
+        if ($line) {
+            $logs[] = json_decode($line, true);
+        }
+    }
+    return response()->json(array_slice($logs, -100));
 });
 
 // All Authenticated Users
