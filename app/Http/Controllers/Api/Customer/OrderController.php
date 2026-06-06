@@ -183,8 +183,12 @@ class OrderController extends Controller
 
         try {
             $transferContent = 'TToan ' . $order->order_code;
+            
+            // Tạo mã payos_order_code duy nhất bằng timestamp + id để tránh trùng lặp trên PayOS
+            $newPayosOrderCode = (int) (time() . $order->id);
+
             $paymentLink = $this->payOSService->createPaymentLink(
-                $order->order_code,
+                (string) $newPayosOrderCode,
                 (int) $order->total_amount,
                 $transferContent
             );
@@ -192,7 +196,10 @@ class OrderController extends Controller
             $checkoutUrl = $paymentLink['checkoutUrl'] ?? null;
             $qrCode      = $paymentLink['qrCode'] ?? null;
 
-            // Cập nhật link mới vào DB
+            // Cập nhật mã PayOS mới và link mới vào DB
+            $order->payos_order_code = $newPayosOrderCode;
+            $order->save();
+
             $order->payment->update([
                 'payos_checkout_url' => $checkoutUrl,
                 'payos_qr_code'      => $qrCode,
@@ -207,7 +214,9 @@ class OrderController extends Controller
                 'order_code' => $order->order_code,
                 'error'      => $e->getMessage(),
             ]);
-            return response()->json(['message' => 'Không thể tạo link thanh toán. Vui lòng thử lại sau.'], 500);
+            return response()->json([
+                'message' => 'Không thể tạo link thanh toán: ' . $e->getMessage()
+            ], 500);
         }
     }
 
