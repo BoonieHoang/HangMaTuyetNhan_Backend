@@ -4,7 +4,6 @@ use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\Auth\SocialiteController;
 use App\Http\Controllers\Api\Customer\CartController;
 use App\Http\Controllers\Api\Customer\ChatbotController;
-use App\Http\Controllers\Api\Customer\CheckoutController;
 use App\Http\Controllers\Api\Customer\OrderController as CustomerOrderController;
 use App\Http\Controllers\Api\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Api\Customer\ProfileController;
@@ -17,6 +16,7 @@ use App\Http\Controllers\Api\Admin\ProductController;
 use App\Http\Controllers\Api\Admin\PurposeController;
 use App\Http\Controllers\Api\Admin\SystemConfigController;
 use App\Http\Controllers\Api\Admin\UserController;
+use App\Http\Controllers\Api\PayOSWebhookController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -41,6 +41,9 @@ Route::get('/shipping-fee', function () {
     return response()->json(['shipping_fee' => (int) $fee]);
 });
 
+// PayOS Webhook — public, không cần auth (PayOS gửi từ server của họ)
+Route::post('/payos/webhook', [PayOSWebhookController::class, 'handleWebhook']);
+
 // All Authenticated Users
 Route::middleware(['auth:sanctum', 'check.account.status'])->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
@@ -63,7 +66,6 @@ Route::middleware(['auth:sanctum', 'check.account.status', 'role:customer'])->gr
     Route::get('/orders/{code}', [CustomerOrderController::class, 'show']);
     Route::patch('/orders/{code}/cancel', [CustomerOrderController::class, 'cancel']);
     Route::get('/orders/{code}/qr', [CustomerOrderController::class, 'showQR']);
-    Route::get('/checkout/cart-qr', [CheckoutController::class, 'getCartQR']);
 
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::patch('/profile', [ProfileController::class, 'update']);

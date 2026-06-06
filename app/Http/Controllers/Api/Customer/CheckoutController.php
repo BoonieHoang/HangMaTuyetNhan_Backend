@@ -10,7 +10,7 @@ use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Services\CartService;
 use App\Services\OrderCodeService;
-use App\Services\VietQRService;
+use App\Services\PayOSService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
@@ -18,13 +18,13 @@ class CheckoutController extends Controller
 {
     protected $cartService;
     protected $orderCodeService;
-    protected $vietQRService;
+    protected $payOSService;
 
-    public function __construct(CartService $cartService, OrderCodeService $orderCodeService, VietQRService $vietQRService)
+    public function __construct(CartService $cartService, OrderCodeService $orderCodeService, PayOSService $payOSService)
     {
         $this->cartService = $cartService;
         $this->orderCodeService = $orderCodeService;
-        $this->vietQRService = $vietQRService;
+        $this->payOSService = $payOSService;
     }
 
     public function store(PlaceOrderRequest $request)
@@ -61,20 +61,40 @@ class CheckoutController extends Controller
                 'total_amount' => $totalAmount + $shippingFee,
             ]);
 
-            $transferContent = "THANH TOAN DON HANG " . $order->order_code;
-            $qrUrl = null;
+            $transferContent = 'TToan ' . $order->order_code;
+            $payosCheckoutUrl = null;
+            $payosQrCode = null;
 
             if ($request->payment_method === 'bank_transfer') {
-                $qrUrl = $this->vietQRService->generateQRUrl($order->total_amount, $transferContent);
+                try {
+                    $paymentLink = $this->payOSService->createPaymentLink(
+                        $order->order_code,
+                        (int) $order->total_amount,
+                        $transferContent
+                    );
+                    $payosCheckoutUrl = $paymentLink['checkoutUrl'] ?? null;
+                    $payosQrCode     = $paymentLink['qrCode'] ?? null;
+
+                    // Lưu numeric code PayOS vào đơn hàng để đối chiếu Webhook
+                    $numericCode = (int) preg_replace('/\D/', '', $order->order_code);
+                    $order->payos_order_code = $numericCode;
+                    $order->save();
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('[Checkout] Tạo link PayOS thất bại', [
+                        'order_code' => $order->order_code,
+                        'error'      => $e->getMessage(),
+                    ]);
+                }
             }
 
             Payment::create([
-                'order_id' => $order->id,
-                'payment_method' => $request->payment_method,
-                'status' => 'pending',
-                'amount' => $order->total_amount,
-                'transfer_content' => $request->payment_method === 'bank_transfer' ? $transferContent : null,
-                'qr_url' => $qrUrl,
+                'order_id'           => $order->id,
+                'payment_method'     => $request->payment_method,
+                'status'             => 'pending',
+                'amount'             => $order->total_amount,
+                'transfer_content'   => $request->payment_method === 'bank_transfer' ? $transferContent : null,
+                'payos_checkout_url' => $payosCheckoutUrl,
+                'payos_qr_code'      => $payosQrCode,
             ]);
 
             foreach ($cart->items as $item) {
@@ -107,32 +127,9 @@ class CheckoutController extends Controller
         $order->load(['items', 'payment']);
 
         return response()->json([
-            'order' => new OrderResource($order),
-            'qr_url' => $order->payment->qr_url ?? null,
+            'order'               => new OrderResource($order),
+            'payos_checkout_url'  => $order->payment->payos_checkout_url ?? null,
+            'payos_qr_code'       => $order->payment->payos_qr_code ?? null,
         ], 201);
-    }
-
-    public function getCartQR(Request $request)
-    {
-        $cart = $this->cartService->getOrCreateCart($request);
-        $total = $this->cartService->getCartTotal($cart);
-        $shippingMethod = $request->query('shipping_method', 'ship');
-        $defaultFee = (int) (\App\Models\SystemConfig::where('key', 'shipping_fee_default')->value('value') ?? 20000);
-        $shippingFee = $shippingMethod === 'ship' ? $defaultFee : 0;
-
-        $configs = \App\Models\SystemConfig::pluck('value', 'key')->toArray();
-        $bankCode = $configs['bank_code'] ?? '';
-        $accountNumber = $configs['bank_account_number'] ?? '';
-        $accountName = $configs['bank_account_name'] ?? '';
-
-        $qrUrl = $this->vietQRService->generateQRUrl($total + $shippingFee, "THANH TOAN DON HANG");
-
-        return response()->json([
-            'qr_url' => $qrUrl,
-            'shipping_fee' => $shippingFee,
-            'bank_code' => $bankCode,
-            'bank_account_number' => $accountNumber,
-            'bank_account_name' => $accountName,
-        ]);
     }
 }

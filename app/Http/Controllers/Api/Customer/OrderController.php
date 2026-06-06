@@ -11,13 +11,13 @@ class OrderController extends Controller
 {
     protected $cartService;
     protected $orderCodeService;
-    protected $vietQRService;
+    protected $payOSService;
 
-    public function __construct(\App\Services\CartService $cartService, \App\Services\OrderCodeService $orderCodeService, \App\Services\VietQRService $vietQRService)
+    public function __construct(\App\Services\CartService $cartService, \App\Services\OrderCodeService $orderCodeService, \App\Services\PayOSService $payOSService)
     {
         $this->cartService = $cartService;
         $this->orderCodeService = $orderCodeService;
-        $this->vietQRService = $vietQRService;
+        $this->payOSService = $payOSService;
     }
 
     public function index(Request $request)
@@ -82,20 +82,40 @@ class OrderController extends Controller
                 'total_amount' => $subtotal + $shippingFee,
             ]);
 
-            $transferContent = "THANH TOAN DON HANG " . $order->order_code;
-            $qrUrl = null;
+            $transferContent = 'TToan ' . $order->order_code;
+            $payosCheckoutUrl = null;
+            $payosQrCode = null;
 
             if ($request->payment_method === 'bank_transfer') {
-                $qrUrl = $this->vietQRService->generateQRUrl($order->total_amount, $transferContent);
+                try {
+                    $paymentLink = $this->payOSService->createPaymentLink(
+                        $order->order_code,
+                        (int) $order->total_amount,
+                        $transferContent
+                    );
+                    $payosCheckoutUrl = $paymentLink['checkoutUrl'] ?? null;
+                    $payosQrCode     = $paymentLink['qrCode'] ?? null;
+
+                    // Lưu numeric code PayOS để đối chiếu Webhook
+                    $numericCode = (int) preg_replace('/\D/', '', $order->order_code);
+                    $order->payos_order_code = $numericCode;
+                    $order->save();
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('[Order] Tạo link PayOS thất bại', [
+                        'order_code' => $order->order_code,
+                        'error'      => $e->getMessage(),
+                    ]);
+                }
             }
 
             \App\Models\Payment::create([
-                'order_id' => $order->id,
-                'payment_method' => $request->payment_method,
-                'status' => 'pending',
-                'amount' => $order->total_amount,
-                'transfer_content' => $request->payment_method === 'bank_transfer' ? $transferContent : null,
-                'qr_url' => $qrUrl,
+                'order_id'           => $order->id,
+                'payment_method'     => $request->payment_method,
+                'status'             => 'pending',
+                'amount'             => $order->total_amount,
+                'transfer_content'   => $request->payment_method === 'bank_transfer' ? $transferContent : null,
+                'payos_checkout_url' => $payosCheckoutUrl,
+                'payos_qr_code'      => $payosQrCode,
             ]);
 
             foreach ($cart->items as $item) {
@@ -126,8 +146,9 @@ class OrderController extends Controller
         $order->load(['items', 'payment']);
 
         return response()->json([
-            'order' => new OrderResource($order),
-            'qr_url' => $order->payment->qr_url ?? null,
+            'order'              => new OrderResource($order),
+            'payos_checkout_url' => $order->payment->payos_checkout_url ?? null,
+            'payos_qr_code'      => $order->payment->payos_qr_code ?? null,
         ], 201);
     }
 
@@ -136,7 +157,8 @@ class OrderController extends Controller
         $order = Order::where('order_code', $code)->with('payment')->firstOrFail();
 
         return response()->json([
-            'qr_url' => $order->payment->qr_url ?? null,
+            'payos_checkout_url' => $order->payment->payos_checkout_url ?? null,
+            'payos_qr_code'      => $order->payment->payos_qr_code ?? null,
         ]);
     }
 

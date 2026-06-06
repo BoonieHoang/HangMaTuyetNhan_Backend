@@ -13,6 +13,8 @@ class Payment extends Model
         'amount',
         'transfer_content',
         'qr_url',
+        'payos_checkout_url',
+        'payos_qr_code',
         'paid_at',
     ];
 
