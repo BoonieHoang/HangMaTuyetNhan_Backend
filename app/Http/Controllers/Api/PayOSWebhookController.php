@@ -79,12 +79,9 @@ class PayOSWebhookController extends Controller
                 'status'     => $order->status
             ]);
 
-            // 3. Chỉ cập nhật nếu thanh toán chưa được xác nhận hoàn tất (tránh xử lý trùng)
             if ($order->payment && $order->payment->status === 'pending') {
                 if (isset($data['code']) && $data['code'] === '00') {
                     DB::transaction(function () use ($order) {
-                        // Trạng thái đơn hàng giữ nguyên là pending (Chờ xác nhận)
-                        // Chỉ cập nhật trạng thái thanh toán sang paid (Đã thanh toán)
                         if ($order->payment) {
                             $order->payment->status   = 'paid';
                             $order->payment->paid_at  = now();
