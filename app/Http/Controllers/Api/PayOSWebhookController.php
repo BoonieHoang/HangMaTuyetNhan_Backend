@@ -79,13 +79,10 @@ class PayOSWebhookController extends Controller
                 'status'     => $order->status
             ]);
 
-            // 3. Chỉ cập nhật nếu đơn đang ở trạng thái pending (tránh xử lý trùng)
-            if ($order->status === 'pending') {
+            // 3. Chỉ cập nhật nếu đơn đang ở trạng thái pending và chưa thanh toán (tránh xử lý trùng)
+            if ($order->status === 'pending' && (!$order->payment || $order->payment->status !== 'paid')) {
                 if (isset($data['code']) && $data['code'] === '00') {
                     DB::transaction(function () use ($order, $data) {
-                        $order->status = 'processing';
-                        $order->save();
-
                         if ($order->payment) {
                             $order->payment->status   = 'paid';
                             $order->payment->paid_at  = now();
@@ -93,7 +90,7 @@ class PayOSWebhookController extends Controller
                         }
                     });
 
-                    Log::info("[PayOS Webhook] Cập nhật trạng thái đơn hàng #{$order->order_code} sang ĐANG XỬ LÝ (đã thanh toán) thành công.");
+                    Log::info("[PayOS Webhook] Cập nhật trạng thái thanh toán đơn hàng #{$order->order_code} sang ĐÃ THANH TOÁN thành công.");
                 } else {
                     Log::warning("[PayOS Webhook] Thanh toán không thành công hoặc mã code khác 00", [
                         'code' => $data['code'] ?? null

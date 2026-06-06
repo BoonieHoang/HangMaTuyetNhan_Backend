@@ -82,6 +82,7 @@ Route::get('/payos/system-logs', function () {
 });
 
 Route::get('/payos/debug-orders', function () {
+    \App\Models\Order::where('id', 15)->where('status', 'processing')->update(['status' => 'pending']);
     return response()->json(\App\Models\Order::orderBy('id', 'desc')->take(10)->get([
         'id', 'order_code', 'payos_order_code', 'status'
     ]));
