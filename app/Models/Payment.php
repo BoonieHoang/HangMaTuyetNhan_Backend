@@ -16,15 +16,11 @@ class Payment extends Model
         'payos_checkout_url',
         'payos_qr_code',
         'paid_at',
-        'refund_reason',
-        'refund_note',
-        'refunded_at',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'paid_at' => 'datetime',
-        'refunded_at' => 'datetime',
     ];
 
     public function order()
