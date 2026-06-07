@@ -9,24 +9,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('payments', function (Blueprint $table) {
-            // Mở rộng enum status để hỗ trợ trạng thái hoàn tiền
-            // MySQL: cần dùng raw statement để thay đổi enum
-            \DB::statement("ALTER TABLE payments MODIFY COLUMN status ENUM('pending','paid','failed','refund_pending','refunded') NOT NULL DEFAULT 'pending'");
-
-            // Lý do yêu cầu hoàn tiền (do khách điền khi hủy đơn)
-            $table->string('refund_reason', 500)->nullable()->after('paid_at');
-            // Ghi chú của admin khi xử lý hoàn tiền
-            $table->string('refund_note', 500)->nullable()->after('refund_reason');
-            // Thời điểm hoàn tiền hoàn tất
-            $table->timestamp('refunded_at')->nullable()->after('refund_note');
+            // Change status from enum to string to support more statuses without enum migration issues
+            $table->string('status', 50)->default('pending')->change();
+            
+            // Add refund details
+            $table->string('refund_reason', 255)->nullable()->after('paid_at');
+            $table->timestamp('refunded_at')->nullable()->after('refund_reason');
         });
     }
 
     public function down(): void
     {
         Schema::table('payments', function (Blueprint $table) {
-            $table->dropColumn(['refund_reason', 'refund_note', 'refunded_at']);
-            \DB::statement("ALTER TABLE payments MODIFY COLUMN status ENUM('pending','paid','failed') NOT NULL DEFAULT 'pending'");
+            $table->dropColumn(['refund_reason', 'refunded_at']);
         });
     }
 };

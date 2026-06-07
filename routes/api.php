@@ -12,7 +12,6 @@ use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\HolidayController;
 use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\Admin\PaymentController;
-use App\Http\Controllers\Api\Admin\RefundController;
 use App\Http\Controllers\Api\Admin\ProductController;
 use App\Http\Controllers\Api\Admin\PurposeController;
 use App\Http\Controllers\Api\Admin\SystemConfigController;
@@ -147,8 +146,4 @@ Route::middleware(['auth:sanctum', 'check.account.status', 'role:admin'])->prefi
 
     Route::get('/payments', [PaymentController::class, 'index']);
     Route::post('/payments/{id}/mark-paid', [PaymentController::class, 'markPaid']);
-
-    Route::get('/refunds', [RefundController::class, 'index']);
-    Route::post('/refunds/{id}/approve', [RefundController::class, 'approve']);
-    Route::post('/refunds/{id}/reject', [RefundController::class, 'reject']);
 });

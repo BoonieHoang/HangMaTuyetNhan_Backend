@@ -18,9 +18,6 @@ class PaymentResource extends JsonResource
             'payos_checkout_url'  => $this->payos_checkout_url,
             'payos_qr_code'       => $this->payos_qr_code,
             'paid_at'             => $this->paid_at,
-            'refund_reason'       => $this->refund_reason,
-            'refund_note'         => $this->refund_note,
-            'refunded_at'         => $this->refunded_at,
         ];
     }
 }
