@@ -233,28 +233,24 @@ class OrderController extends Controller
             ], 400);
         }
 
+        // Không cho hủy nếu đã thanh toán bằng PayOS thành công
+        if ($order->payment && $order->payment->status === 'paid') {
+            return response()->json([
+                'message' => 'Đơn hàng đã thanh toán thành công, không thể hủy.',
+            ], 400);
+        }
+
         $request->validate([
             'cancelled_reason' => 'required|string|max:255',
         ]);
 
-        $refundRequested = false;
-
-        \Illuminate\Support\Facades\DB::transaction(function () use ($order, $request, &$refundRequested) {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($order, $request) {
             $order->status = 'cancelled';
             $order->cancelled_reason = $request->cancelled_reason;
             $order->save();
 
-            if ($order->payment) {
-                if ($order->payment->status === 'paid') {
-                    // Đã thanh toán → yêu cầu hoàn tiền
-                    $order->payment->update([
-                        'status'        => 'refund_pending',
-                        'refund_reason' => $request->cancelled_reason,
-                    ]);
-                    $refundRequested = true;
-                } elseif ($order->payment->status === 'pending') {
-                    $order->payment->update(['status' => 'failed']);
-                }
+            if ($order->payment && $order->payment->status === 'pending') {
+                $order->payment->update(['status' => 'failed']);
             }
 
             // Hoàn lại tồn kho
@@ -264,15 +260,8 @@ class OrderController extends Controller
                 }
             }
         });
-
-        return response()->json([
-            'message'          => $message,
-            'refund_requested' => $refundRequested,
-            'order'            => new OrderResource($order->fresh(['items', 'payment'])),
-        ]);
         return response()->json([
             'message' => 'Hủy đơn hàng thành công.',
-            'order' => new OrderResource($order),
-        ]);
+            'order'   => new OrderResource($order->fresh(['items', 'payment'])),        ]);
     }
 }
