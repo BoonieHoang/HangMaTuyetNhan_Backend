@@ -77,6 +77,16 @@ class OrderController extends Controller
                     'paid_at' => now()
                 ]);
             }
+
+            // Cộng điểm công đức cho khách khi đơn hàng được giao thành công
+            if ($newStatus === 'delivered' && $order->points_earned == 0) {
+                // 1 điểm cho mỗi 10,000đ tổng đơn hàng (sau giảm giá)
+                $earnedPoints = (int) floor((float) $order->total_amount / 10000);
+                if ($earnedPoints > 0) {
+                    $order->points_earned = $earnedPoints;
+                    $order->user()->increment('merit_points', $earnedPoints);
+                }
+            }
         }
 
         $order->save();

@@ -4,10 +4,12 @@ use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\Auth\SocialiteController;
 use App\Http\Controllers\Api\Customer\CartController;
 use App\Http\Controllers\Api\Customer\ChatbotController;
+use App\Http\Controllers\Api\Customer\CouponController as CustomerCouponController;
 use App\Http\Controllers\Api\Customer\OrderController as CustomerOrderController;
 use App\Http\Controllers\Api\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Api\Customer\ProfileController;
 use App\Http\Controllers\Api\Admin\CategoryController;
+use App\Http\Controllers\Api\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\HolidayController;
 use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
@@ -109,6 +111,11 @@ Route::middleware(['auth:sanctum', 'check.account.status', 'role:customer'])->gr
     Route::get('/orders/{code}/qr', [CustomerOrderController::class, 'showQR']);
     Route::post('/orders/{code}/renew-payment', [CustomerOrderController::class, 'renewPayment']);
 
+    Route::get('/coupons', [CustomerCouponController::class, 'index']);
+    Route::get('/coupons/available', [CustomerCouponController::class, 'available']);
+    Route::post('/coupons/redeem', [CustomerCouponController::class, 'redeem']);
+    Route::post('/coupons/verify', [CustomerCouponController::class, 'verify']);
+
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::patch('/profile', [ProfileController::class, 'update']);
     Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar']);
@@ -146,4 +153,7 @@ Route::middleware(['auth:sanctum', 'check.account.status', 'role:admin'])->prefi
 
     Route::get('/payments', [PaymentController::class, 'index']);
     Route::post('/payments/{id}/mark-paid', [PaymentController::class, 'markPaid']);
+
+    // Quản lý mã giảm giá
+    Route::apiResource('coupons', AdminCouponController::class);
 });

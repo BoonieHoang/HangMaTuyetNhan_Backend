@@ -25,6 +25,7 @@ class User extends Authenticatable
         'address',
         'google_id',
         'email_verified_at',
+        'merit_points',
     ];
 
     protected $hidden = [
@@ -50,5 +51,10 @@ class User extends Authenticatable
     public function chatbotLogs()
     {
         return $this->hasMany(ChatbotLog::class);
+    }
+
+    public function userCoupons()
+    {
+        return $this->hasMany(UserCoupon::class);
     }
 }

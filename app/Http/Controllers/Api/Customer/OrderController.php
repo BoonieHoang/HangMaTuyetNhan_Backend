@@ -43,10 +43,11 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'fullname' => 'required|string|max:255',
-            'phone' => 'required|string|max:20',
-            'ship_address' => 'required|string',
+            'fullname'       => 'required|string|max:255',
+            'phone'          => 'required|string|max:20',
+            'ship_address'   => 'required|string',
             'payment_method' => 'required|in:cod,bank_transfer',
+            'coupon_id'      => 'nullable|exists:coupons,id',
         ]);
 
         $cart = $this->cartService->getOrCreateCart($request);
@@ -63,24 +64,50 @@ class OrderController extends Controller
         }
 
         $order = \Illuminate\Support\Facades\DB::transaction(function () use ($request, $cart) {
-            $subtotal = $this->cartService->getCartTotal($cart);
-            $defaultFee = (int) (\App\Models\SystemConfig::where('key', 'shipping_fee_default')->value('value') ?? 20000);
+            $subtotal    = $this->cartService->getCartTotal($cart);
+            $defaultFee  = (int) (\App\Models\SystemConfig::where('key', 'shipping_fee_default')->value('value') ?? 20000);
             $shippingFee = $request->shipping_method === 'ship' ? $defaultFee : 0;
 
+            // Xử lý mã giảm giá
+            $discountAmount = 0;
+            $couponId       = null;
+            if ($request->filled('coupon_id')) {
+                $userCoupon = \App\Models\UserCoupon::with('coupon')
+                    ->where('user_id', $request->user()->id)
+                    ->where('coupon_id', $request->coupon_id)
+                    ->where('is_used', false)
+                    ->first();
+
+                if ($userCoupon && $userCoupon->coupon->isValid() && $subtotal >= $userCoupon->coupon->min_order_amount) {
+                    $discountAmount = $userCoupon->coupon->calculateDiscount($subtotal);
+                    $couponId       = $userCoupon->coupon->id;
+                }
+            }
+
+            $totalAmount = max(0, $subtotal + $shippingFee - $discountAmount);
+
             $order = Order::create([
-                'order_code' => $this->orderCodeService->generate(),
-                'user_id' => $request->user()->id,
-                'fullname' => $request->fullname,
-                'phone' => $request->phone,
-                'email' => $request->user()->email ?? '',
-                'ship_address' => $request->ship_address,
-                'note' => $request->note,
-                'payment_method' => $request->payment_method,
-                'status' => 'pending',
-                'subtotal' => $subtotal,
-                'shipping_fee' => $shippingFee,
-                'total_amount' => $subtotal + $shippingFee,
+                'order_code'      => $this->orderCodeService->generate(),
+                'user_id'         => $request->user()->id,
+                'fullname'        => $request->fullname,
+                'phone'           => $request->phone,
+                'email'           => $request->user()->email ?? '',
+                'ship_address'    => $request->ship_address,
+                'note'            => $request->note,
+                'coupon_id'       => $couponId,
+                'payment_method'  => $request->payment_method,
+                'status'          => 'pending',
+                'subtotal'        => $subtotal,
+                'shipping_fee'    => $shippingFee,
+                'discount_amount' => $discountAmount,
+                'total_amount'    => $totalAmount,
             ]);
+
+            // Đánh dấu mã giảm giá đã dùng
+            if ($couponId && isset($userCoupon)) {
+                $userCoupon->update(['is_used' => true, 'used_at' => now()]);
+                \App\Models\Coupon::where('id', $couponId)->increment('used_count');
+            }
 
             $transferContent = 'TToan ' . $order->order_code;
             $payosCheckoutUrl = null;

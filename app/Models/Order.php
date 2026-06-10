@@ -15,18 +15,22 @@ class Order extends Model
         'email',
         'ship_address',
         'note',
+        'coupon_id',
         'payment_method',
         'status',
         'subtotal',
         'shipping_fee',
+        'discount_amount',
         'total_amount',
+        'points_earned',
         'cancelled_reason',
     ];
 
     protected $casts = [
-        'subtotal' => 'decimal:2',
-        'shipping_fee' => 'decimal:2',
-        'total_amount' => 'decimal:2',
+        'subtotal'        => 'decimal:2',
+        'shipping_fee'    => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'total_amount'    => 'decimal:2',
     ];
 
     public function user()
@@ -42,6 +46,11 @@ class Order extends Model
     public function payment()
     {
         return $this->hasOne(Payment::class);
+    }
+
+    public function coupon()
+    {
+        return $this->belongsTo(Coupon::class);
     }
 
     public function getStatusLabelAttribute()
