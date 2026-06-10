@@ -20,6 +20,7 @@ class UserResource extends JsonResource
             'address' => $this->address,
             'gender' => $this->gender,
             'birthday' => $this->birthday ? ($this->birthday instanceof \DateTimeInterface ? $this->birthday->format('Y-m-d') : substr($this->birthday, 0, 10)) : null,
+            'merit_points' => $this->merit_points,
             'email_verified_at' => $this->email_verified_at,
             'created_at' => $this->created_at,
             'orders_count' => $this->whenCounted('orders'),
