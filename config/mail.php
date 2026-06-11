@@ -70,9 +70,7 @@ return [
             'transport' => 'array',
         ],
 
-        'resend' => [
-            'transport' => 'resend',
-        ],
+
 
         'failover' => [
             'transport' => 'failover',
