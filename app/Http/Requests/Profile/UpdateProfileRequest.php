@@ -13,7 +13,7 @@ class UpdateProfileRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        $rules = [
             'fullname' => 'required|string|max:100',
             'email' => 'nullable|email|unique:users,email,' . $this->user()->id,
             'phone' => 'required|string|regex:/^[0-9]+$/|max:12|unique:users,phone,' . $this->user()->id,
@@ -21,8 +21,15 @@ class UpdateProfileRequest extends FormRequest
             'gender' => 'nullable|in:male,female,other',
             'birthday' => 'nullable|date|before:today',
             'password' => 'nullable|string|min:6|confirmed',
-            'old_password' => 'required_with:password|string',
         ];
+
+        if (empty($this->user()->google_id)) {
+            $rules['old_password'] = 'required_with:password|string';
+        } else {
+            $rules['old_password'] = 'nullable|string';
+        }
+
+        return $rules;
     }
 
     public function messages(): array

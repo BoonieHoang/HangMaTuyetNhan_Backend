@@ -34,7 +34,7 @@ class SocialiteController extends Controller
                     'email' => $googleUser->getEmail(),
                     'google_id' => $googleUser->getId(),
                     'avatar' => $googleUser->getAvatar(),
-                    'password' => Hash::make(Str::random(24)),
+                    'password' => null,
                     'email_verified_at' => now(),
                 ]);
             } elseif (! $user->google_id) {
