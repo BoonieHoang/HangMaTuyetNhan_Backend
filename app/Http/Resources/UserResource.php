@@ -23,6 +23,7 @@ class UserResource extends JsonResource
             'merit_points' => $this->merit_points,
             'email_verified_at' => $this->email_verified_at,
             'google_id' => $this->google_id,
+            'has_password' => !is_null($this->password),
             'created_at' => $this->created_at,
             'orders_count' => $this->whenCounted('orders'),
         ];
