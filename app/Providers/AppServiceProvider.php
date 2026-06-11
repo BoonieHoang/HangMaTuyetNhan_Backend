@@ -23,8 +23,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        \Illuminate\Support\Facades\Mail::extend('brevo', function () {
-            return new \App\Mail\Transports\BrevoTransport(config('services.brevo.key'));
-        });
+        //
     }
 }
