@@ -23,6 +23,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        \Illuminate\Support\Facades\Mail::extend('resend', function () {
+            return new \App\Mail\Transports\ResendTransport(config('services.resend.key'));
+        });
     }
 }
