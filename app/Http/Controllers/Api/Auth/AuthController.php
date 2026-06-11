@@ -27,6 +27,7 @@ class AuthController extends Controller
 
         $code = rand(100000, 999999);
         Cache::put('email_verification_code_' . $user->id, $code, now()->addMinutes(15));
+        \Log::info("Verification code for user ID {$user->id} ({$user->email}): {$code}");
 
         try {
             Mail::to($user->email)->send(new VerifyEmailCode($code, $user->fullname));
@@ -92,6 +93,7 @@ class AuthController extends Controller
 
         $code = rand(100000, 999999);
         Cache::put('email_verification_code_' . $user->id, $code, now()->addMinutes(15));
+        \Log::info("Resend verification code for user ID {$user->id} ({$user->email}): {$code}");
 
         try {
             Mail::to($user->email)->send(new VerifyEmailCode($code, $user->fullname));
@@ -129,6 +131,7 @@ class AuthController extends Controller
         if (is_null($user->email_verified_at)) {
             $code = rand(100000, 999999);
             Cache::put('email_verification_code_' . $user->id, $code, now()->addMinutes(15));
+            \Log::info("Login verification code for user ID {$user->id} ({$user->email}): {$code}");
             try {
                 Mail::to($user->email)->send(new VerifyEmailCode($code, $user->fullname));
             } catch (\Exception $e) {
