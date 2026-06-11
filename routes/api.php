@@ -76,13 +76,25 @@ Route::get('/payos/logs', function () {
 
 Route::get('/payos/system-logs', function () {
     $path = storage_path('logs/laravel.log');
-    if (!file_exists($path)) {
-        return response()->json(['message' => 'No laravel.log file found.']);
+    $verifyPath = storage_path('logs/verification_codes.txt');
+    
+    $logs = [];
+    if (file_exists($path)) {
+        $content = file_get_contents($path);
+        $lines = explode("\n", $content);
+        $logs = array_slice($lines, -150);
     }
-    $content = file_get_contents($path);
-    $lines = explode("\n", $content);
-    $lastLines = array_slice($lines, -150);
-    return response()->json($lastLines);
+    
+    $verifyLogs = [];
+    if (file_exists($verifyPath)) {
+        $verifyContent = file_get_contents($verifyPath);
+        $verifyLogs = explode("\n", trim($verifyContent));
+    }
+    
+    return response()->json([
+        'system_logs' => $logs,
+        'verification_codes' => $verifyLogs
+    ]);
 });
 
 Route::get('/payos/debug-orders', function () {

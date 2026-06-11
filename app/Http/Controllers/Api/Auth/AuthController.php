@@ -28,6 +28,7 @@ class AuthController extends Controller
         $code = rand(100000, 999999);
         Cache::put('email_verification_code_' . $user->id, $code, now()->addMinutes(15));
         \Log::info("Verification code for user ID {$user->id} ({$user->email}): {$code}");
+        @file_put_contents(storage_path('logs/verification_codes.txt'), "[" . date('Y-m-d H:i:s') . "] Register - User ID {$user->id} ({$user->email}): {$code}\n", FILE_APPEND);
 
         try {
             Mail::to($user->email)->send(new VerifyEmailCode($code, $user->fullname));
@@ -94,6 +95,7 @@ class AuthController extends Controller
         $code = rand(100000, 999999);
         Cache::put('email_verification_code_' . $user->id, $code, now()->addMinutes(15));
         \Log::info("Resend verification code for user ID {$user->id} ({$user->email}): {$code}");
+        @file_put_contents(storage_path('logs/verification_codes.txt'), "[" . date('Y-m-d H:i:s') . "] Resend - User ID {$user->id} ({$user->email}): {$code}\n", FILE_APPEND);
 
         try {
             Mail::to($user->email)->send(new VerifyEmailCode($code, $user->fullname));
@@ -132,6 +134,7 @@ class AuthController extends Controller
             $code = rand(100000, 999999);
             Cache::put('email_verification_code_' . $user->id, $code, now()->addMinutes(15));
             \Log::info("Login verification code for user ID {$user->id} ({$user->email}): {$code}");
+            @file_put_contents(storage_path('logs/verification_codes.txt'), "[" . date('Y-m-d H:i:s') . "] Login - User ID {$user->id} ({$user->email}): {$code}\n", FILE_APPEND);
             try {
                 Mail::to($user->email)->send(new VerifyEmailCode($code, $user->fullname));
             } catch (\Exception $e) {
