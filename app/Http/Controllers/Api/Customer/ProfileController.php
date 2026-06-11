@@ -29,9 +29,9 @@ class ProfileController extends Controller
         $data = $request->validated();
         
         if (!empty($data['password'])) {
-            $hasNoPassword = is_null($user->password);
+            $isGoogleUserWithoutOldPassword = !empty($user->google_id) && empty($data['old_password']);
             
-            if (!$hasNoPassword) {
+            if (!$isGoogleUserWithoutOldPassword) {
                 if (empty($data['old_password']) || !\Hash::check($data['old_password'], $user->password)) {
                     throw \Illuminate\Validation\ValidationException::withMessages([
                         'old_password' => ['Mật khẩu hiện tại không chính xác.'],

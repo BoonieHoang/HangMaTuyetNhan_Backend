@@ -23,10 +23,10 @@ class UpdateProfileRequest extends FormRequest
             'password' => 'nullable|string|min:6|confirmed',
         ];
 
-        if (is_null($this->user()->password)) {
-            $rules['old_password'] = 'nullable|string';
-        } else {
+        if (empty($this->user()->google_id)) {
             $rules['old_password'] = 'required_with:password|string';
+        } else {
+            $rules['old_password'] = 'nullable|string';
         }
 
         return $rules;
