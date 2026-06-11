@@ -15,7 +15,7 @@ class RegisterRequest extends FormRequest
     {
         return [
             'fullname' => 'required|string|max:100',
-            'email' => 'nullable|email|unique:users',
+            'email' => 'required|email|unique:users',
             'password' => 'required|min:8|confirmed',
             'phone' => 'required|string|regex:/^[0-9]+$/|max:12|unique:users',
         ];
@@ -26,6 +26,7 @@ class RegisterRequest extends FormRequest
         return [
             'fullname.required' => 'Họ và tên không được để trống.',
             'fullname.max' => 'Họ và tên không được quá 100 ký tự.',
+            'email.required' => 'Email không được để trống.',
             'email.email' => 'Email không đúng định dạng.',
             'email.unique' => 'Email này đã được sử dụng.',
             'password.required' => 'Mật khẩu không được để trống.',
