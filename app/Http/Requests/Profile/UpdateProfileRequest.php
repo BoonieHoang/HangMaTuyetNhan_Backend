@@ -20,6 +20,8 @@ class UpdateProfileRequest extends FormRequest
             'address' => 'nullable|string',
             'gender' => 'nullable|in:male,female,other',
             'birthday' => 'nullable|date|before:today',
+            'password' => 'nullable|string|min:6|confirmed',
+            'old_password' => 'required_with:password|string',
         ];
     }
 
@@ -35,6 +37,9 @@ class UpdateProfileRequest extends FormRequest
             'phone.unique' => 'Số điện thoại này đã được sử dụng bởi người khác.',
             'birthday.date' => 'Ngày sinh không đúng định dạng.',
             'birthday.before' => 'Ngày sinh phải trước ngày hôm nay.',
+            'password.min' => 'Mật khẩu mới phải có ít nhất 6 ký tự.',
+            'password.confirmed' => 'Xác nhận mật khẩu mới không khớp.',
+            'old_password.required_with' => 'Vui lòng nhập mật khẩu hiện tại để thay đổi mật khẩu.',
         ];
     }
 }

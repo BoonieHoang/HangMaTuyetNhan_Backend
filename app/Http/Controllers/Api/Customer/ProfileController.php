@@ -28,6 +28,19 @@ class ProfileController extends Controller
         
         $data = $request->validated();
         
+        if (!empty($data['password'])) {
+            if (!\Hash::check($data['old_password'], $user->password)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'old_password' => ['Mật khẩu hiện tại không chính xác.'],
+                ]);
+            }
+            $data['password'] = \Hash::make($data['password']);
+        } else {
+            unset($data['password']);
+        }
+        
+        unset($data['old_password']);
+        
         $user->update($data);
 
         return new UserResource($user);
