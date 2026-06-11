@@ -46,9 +46,5 @@ return [
         'cancel_url'   => env('PAYOS_CANCEL_URL'),
     ],
 
-    'brevo' => [
-        'key' => env('BREVO_API_KEY'),
-    ],
-
 ];
 
