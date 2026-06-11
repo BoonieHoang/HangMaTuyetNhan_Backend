@@ -25,10 +25,6 @@ use Illuminate\Support\Facades\Route;
 // Public
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
-Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmailSignature'])
-    ->name('verification.verify');
-Route::post('/email/verification-notification', [AuthController::class, 'resendVerificationNotification'])
-    ->middleware('throttle:3,1');
 Route::get('/auth/google', [SocialiteController::class, 'redirect']);
 Route::get('/auth/google/redirect', [SocialiteController::class, 'redirect']);
 Route::get('/auth/google/callback', [SocialiteController::class, 'callback']);

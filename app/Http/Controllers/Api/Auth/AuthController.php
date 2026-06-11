@@ -29,50 +29,6 @@ class AuthController extends Controller
             'email' => $user->email,
         ], 201);
     }
-
-    public function verifyEmailSignature(Request $request, $id, $hash)
-    {
-        $user = User::findOrFail($id);
-
-        if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
-            return redirect(config('app.frontend_url') . '/login.html?error=invalid_verification_link');
-        }
-
-        if ($user->hasVerifiedEmail()) {
-            return redirect(config('app.frontend_url') . '/login.html?verified=1');
-        }
-
-        if ($user->markEmailAsVerified()) {
-            event(new \Illuminate\Auth\Events\Verified($user));
-        }
-
-        return redirect(config('app.frontend_url') . '/login.html?verified=1');
-    }
-
-    public function resendVerificationNotification(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-        ]);
-
-        $user = User::where('email', $request->email)->first();
-
-        if ($user->hasVerifiedEmail()) {
-            return response()->json(['message' => 'Email này đã được xác thực.'], 400);
-        }
-
-        try {
-            $user->sendEmailVerificationNotification();
-        } catch (\Exception $e) {
-            \Log::warning('Resend email verification notification fail: ' . $e->getMessage());
-            return response()->json(['message' => 'Gửi email thất bại, vui lòng thử lại sau.'], 500);
-        }
-
-        return response()->json([
-            'message' => 'Đã gửi lại link xác thực tới email của bạn. Vui lòng kiểm tra hộp thư.',
-        ]);
-    }
-
     public function login(LoginRequest $request)
     {
         $loginInput = $request->login ?? $request->phone;
