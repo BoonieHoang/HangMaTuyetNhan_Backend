@@ -20,16 +20,11 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'phone' => $request->phone,
+            'email_verified_at' => now(),
         ]);
 
-        try {
-            event(new \Illuminate\Auth\Events\Registered($user));
-        } catch (\Exception $e) {
-            \Log::warning('Verification email fail to send: ' . $e->getMessage());
-        }
-
         return response()->json([
-            'message' => 'Đăng ký thành công. Vui lòng kiểm tra email của bạn để xác thực tài khoản.',
+            'message' => 'Đăng ký thành công. Bạn có thể đăng nhập ngay.',
             'user_id' => $user->id,
             'email' => $user->email,
         ], 201);
@@ -98,14 +93,6 @@ class AuthController extends Controller
 
         if ($user->status === 'locked') {
             return response()->json(['message' => 'Tài khoản của bạn đã bị khóa, mời liên hệ chủ cửa hàng để biết thêm chi tiết.'], 403);
-        }
-
-        if (is_null($user->email_verified_at)) {
-            return response()->json([
-                'status' => 'unverified',
-                'message' => 'Tài khoản chưa được xác thực email. Vui lòng kiểm tra email của bạn để nhấp vào liên kết xác thực.',
-                'email' => $user->email,
-            ], 403);
         }
 
         $token = $user->createToken('auth')->plainTextToken;
