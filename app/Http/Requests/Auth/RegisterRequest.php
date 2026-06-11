@@ -26,7 +26,6 @@ class RegisterRequest extends FormRequest
         return [
             'fullname.required' => 'Họ và tên không được để trống.',
             'fullname.max' => 'Họ và tên không được quá 100 ký tự.',
-            'email.required' => 'Email không được để trống.',
             'email.email' => 'Email không đúng định dạng.',
             'email.unique' => 'Email này đã được sử dụng.',
             'password.required' => 'Mật khẩu không được để trống.',

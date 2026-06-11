@@ -14,7 +14,8 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'phone' => 'required|string|regex:/^[0-9]+$/|max:12',
+            'login' => 'required_without:phone|string',
+            'phone' => 'required_without:login|string',
             'password' => 'required',
         ];
     }
@@ -22,9 +23,8 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'phone.required' => 'Vui lòng nhập số điện thoại.',
-            'phone.regex' => 'Số điện thoại chỉ được chứa các chữ số.',
-            'phone.max' => 'Số điện thoại không được quá 12 số.',
+            'login.required_without' => 'Vui lòng nhập số điện thoại hoặc email.',
+            'phone.required_without' => 'Vui lòng nhập số điện thoại hoặc email.',
             'password.required' => 'Vui lòng nhập mật khẩu.',
         ];
     }

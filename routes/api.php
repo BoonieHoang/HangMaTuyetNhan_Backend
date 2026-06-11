@@ -24,9 +24,9 @@ use Illuminate\Support\Facades\Route;
 
 // Public
 Route::post('/auth/register', [AuthController::class, 'register']);
-Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 Route::post('/auth/verify-email', [AuthController::class, 'verifyEmail']);
 Route::post('/auth/resend-verification', [AuthController::class, 'resendVerification']);
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 Route::get('/auth/google', [SocialiteController::class, 'redirect']);
 Route::get('/auth/google/redirect', [SocialiteController::class, 'redirect']);
 Route::get('/auth/google/callback', [SocialiteController::class, 'callback']);

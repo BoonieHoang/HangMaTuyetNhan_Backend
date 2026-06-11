@@ -11,15 +11,17 @@ class VerifyEmailCode extends Mailable
     use Queueable, SerializesModels;
 
     public $code;
+    public $userName;
 
-    public function __construct($code)
+    public function __construct($code, $userName)
     {
         $this->code = $code;
+        $this->userName = $userName;
     }
 
     public function build()
     {
-        return $this->subject('[Tuyết Nhàn] Xác thực tài khoản của bạn')
+        return $this->subject('Mã xác thực tài khoản Tuyết Nhàn')
                     ->view('emails.verify');
     }
 }

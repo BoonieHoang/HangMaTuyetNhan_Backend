@@ -7,13 +7,12 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Mail\VerifyEmailCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Log;
-use App\Mail\VerifyEmailCode;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -30,25 +29,96 @@ class AuthController extends Controller
         Cache::put('email_verification_code_' . $user->id, $code, now()->addMinutes(15));
 
         try {
-            Mail::to($user->email)->send(new VerifyEmailCode($code));
+            Mail::to($user->email)->send(new VerifyEmailCode($code, $user->fullname));
         } catch (\Exception $e) {
-            Log::error('Send verification email failed on registration: ' . $e->getMessage());
+            // Log mail exception but do not crash the request in local/demo setup
+            \Log::warning('Verify email fail to send: ' . $e->getMessage());
         }
 
         return response()->json([
-            'message' => 'Đăng ký thành công. Vui lòng kiểm tra email để nhận mã xác thực.',
+            'message' => 'Đăng ký thành công. Vui lòng nhập mã xác thực gửi đến email của bạn.',
             'user_id' => $user->id,
             'email' => $user->email,
         ], 201);
     }
 
+    public function verifyEmail(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'code' => 'required|string|size:6',
+        ], [
+            'user_id.required' => 'Mã định danh người dùng là bắt buộc.',
+            'user_id.exists' => 'Không tìm thấy người dùng này.',
+            'code.required' => 'Vui lòng nhập mã xác thực.',
+            'code.size' => 'Mã xác thực phải đúng 6 chữ số.',
+        ]);
+
+        $userId = $request->user_id;
+        $cachedCode = Cache::get('email_verification_code_' . $userId);
+
+        if (!$cachedCode || $cachedCode != $request->code) {
+            throw ValidationException::withMessages([
+                'code' => ['Mã xác thực không chính xác hoặc đã hết hạn.'],
+            ]);
+        }
+
+        $user = User::find($userId);
+        $user->email_verified_at = now();
+        $user->save();
+
+        Cache::forget('email_verification_code_' . $userId);
+
+        $token = $user->createToken('auth')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Xác thực tài khoản thành công.',
+            'user' => new UserResource($user),
+            'token' => $token,
+        ]);
+    }
+
+    public function resendVerification(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        $user = User::find($request->user_id);
+
+        if ($user->email_verified_at) {
+            return response()->json(['message' => 'Tài khoản này đã được xác thực.'], 400);
+        }
+
+        $code = rand(100000, 999999);
+        Cache::put('email_verification_code_' . $user->id, $code, now()->addMinutes(15));
+
+        try {
+            Mail::to($user->email)->send(new VerifyEmailCode($code, $user->fullname));
+        } catch (\Exception $e) {
+            \Log::warning('Resend email fail to send: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'message' => 'Đã gửi lại mã xác thực tới email của bạn.',
+        ]);
+    }
+
     public function login(LoginRequest $request)
     {
-        $user = User::where('phone', $request->phone)->first();
+        $loginInput = $request->login ?? $request->phone;
+
+        $user = null;
+        if (filter_var($loginInput, FILTER_VALIDATE_EMAIL)) {
+            $user = User::where('email', $loginInput)->first();
+        } else {
+            $user = User::where('phone', $loginInput)->first();
+        }
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'phone' => ['Thông tin đăng nhập không chính xác.'],
+                'login' => ['Thông tin đăng nhập không chính xác.'],
             ]);
         }
 
@@ -59,16 +129,16 @@ class AuthController extends Controller
         if (is_null($user->email_verified_at)) {
             $code = rand(100000, 999999);
             Cache::put('email_verification_code_' . $user->id, $code, now()->addMinutes(15));
-
             try {
-                Mail::to($user->email)->send(new VerifyEmailCode($code));
+                Mail::to($user->email)->send(new VerifyEmailCode($code, $user->fullname));
             } catch (\Exception $e) {
-                Log::error('Send verification email failed on login check: ' . $e->getMessage());
+                \Log::warning('Resend code on login fail to send: ' . $e->getMessage());
             }
 
             return response()->json([
-                'message' => 'Tài khoản chưa được xác thực email. Mã xác thực mới đã được gửi tới email của bạn.',
-                'unverified' => true,
+                'status' => 'unverified',
+                'message' => 'Tài khoản chưa được xác thực email. Một mã xác thực mới đã được gửi tới email của bạn.',
+                'user_id' => $user->id,
                 'email' => $user->email,
             ], 403);
         }
@@ -77,88 +147,6 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $token,
-        ]);
-    }
-
-    public function verifyEmail(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'code' => 'required|string|size:6',
-        ], [
-            'email.required' => 'Email không được để trống.',
-            'email.email' => 'Email không đúng định dạng.',
-            'code.required' => 'Mã xác thực không được để trống.',
-            'code.size' => 'Mã xác thực phải gồm 6 chữ số.',
-        ]);
-
-        $user = User::where('email', $request->email)->first();
-
-        if (! $user) {
-            throw ValidationException::withMessages([
-                'email' => ['Không tìm thấy tài khoản với email này.'],
-            ]);
-        }
-
-        if ($user->email_verified_at) {
-            return response()->json(['message' => 'Tài khoản của bạn đã được xác thực trước đó.'], 200);
-        }
-
-        $cachedCode = Cache::get('email_verification_code_' . $user->id);
-
-        if (! $cachedCode || $cachedCode != $request->code) {
-            throw ValidationException::withMessages([
-                'code' => ['Mã xác thực không chính xác hoặc đã hết hạn.'],
-            ]);
-        }
-
-        $user->email_verified_at = now();
-        $user->save();
-
-        Cache::forget('email_verification_code_' . $user->id);
-
-        $token = $user->createToken('auth')->plainTextToken;
-
-        return response()->json([
-            'message' => 'Xác thực tài khoản thành công.',
-            'token' => $token,
-            'user' => new UserResource($user->refresh()),
-        ]);
-    }
-
-    public function resendVerification(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-        ], [
-            'email.required' => 'Email không được để trống.',
-            'email.email' => 'Email không đúng định dạng.',
-        ]);
-
-        $user = User::where('email', $request->email)->first();
-
-        if (! $user) {
-            throw ValidationException::withMessages([
-                'email' => ['Không tìm thấy tài khoản với email này.'],
-            ]);
-        }
-
-        if ($user->email_verified_at) {
-            return response()->json(['message' => 'Tài khoản đã được xác thực trước đó.'], 400);
-        }
-
-        $code = rand(100000, 999999);
-        Cache::put('email_verification_code_' . $user->id, $code, now()->addMinutes(15));
-
-        try {
-            Mail::to($user->email)->send(new VerifyEmailCode($code));
-        } catch (\Exception $e) {
-            Log::error('Send verification email failed on resend: ' . $e->getMessage());
-            return response()->json(['message' => 'Không thể gửi email xác thực. Vui lòng thử lại sau.'], 500);
-        }
-
-        return response()->json([
-            'message' => 'Mã xác thực mới đã được gửi tới email của bạn.',
         ]);
     }
 
