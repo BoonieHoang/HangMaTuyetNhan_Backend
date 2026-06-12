@@ -13,70 +13,77 @@ class SmartCalendarController extends Controller
     public function index(OpenAIService $aiService)
     {
         try {
-            // Sử dụng cache_v4 để cập nhật dữ liệu ngày lễ AI và sản phẩm mới
-            $data = Cache::remember('smart_calendar_v4', 43200, function () use ($aiService) {
-                // 1. Đề cử danh sách ngày lễ lịch âm gần nhất từ AI
-                $aiHolidays = $aiService->getUpcomingLunarHolidays(3);
+            // Sử dụng cache_v5 mới để tránh lấy trúng cache rỗng trước đó và chỉ lưu khi có dữ liệu
+            $cachedData = Cache::get('smart_calendar_v5');
+            if ($cachedData) {
+                return response()->json($cachedData);
+            }
 
-                if (empty($aiHolidays)) {
-                    return [];
-                }
+            // 1. Đề cử danh sách ngày lễ lịch âm gần nhất từ AI
+            $aiHolidays = $aiService->getUpcomingLunarHolidays(3);
 
-                // 2. Lấy danh sách chi tiết các sản phẩm được AI đề xuất cho các ngày lễ
-                $allProductIds = collect($aiHolidays)->flatMap(fn($h) => $h['product_ids'] ?? [])->unique()->toArray();
-                
-                $dbProducts = Product::active()
-                    ->with(['images', 'category'])
-                    ->whereIn('id', $allProductIds)
-                    ->get()
-                    ->keyBy('id');
+            if (empty($aiHolidays)) {
+                // Không lưu vào cache nếu dữ liệu rỗng để có thể gọi lại ở request sau
+                return response()->json([]);
+            }
 
-                // 3. Kết xuất thông tin ngày lễ động kết hợp với sản phẩm liên quan tương ứng
-                return collect($aiHolidays)
-                    ->map(function ($item) use ($dbProducts) {
-                        $holidayProductIds = $item['product_ids'] ?? [];
-                        
-                        $holidayProducts = [];
-                        foreach ($holidayProductIds as $id) {
-                            if (isset($dbProducts[$id])) {
-                                $p = $dbProducts[$id];
-                                $holidayProducts[] = [
-                                    'id'    => $p->id,
-                                    'name'  => $p->name,
-                                    'slug'  => $p->slug,
-                                    'price' => (int) $p->price,
-                                    'image' => $p->primary_image_url,
-                                ];
-                            }
-                        }
+            // 2. Lấy danh sách chi tiết các sản phẩm được AI đề xuất cho các ngày lễ
+            $allProductIds = collect($aiHolidays)->flatMap(fn($h) => $h['product_ids'] ?? [])->unique()->toArray();
+            
+            $dbProducts = Product::active()
+                ->with(['images', 'category'])
+                ->whereIn('id', $allProductIds)
+                ->get()
+                ->keyBy('id');
 
-                        // Fallback nếu AI không tìm thấy sản phẩm phù hợp hoặc sản phẩm đó không hoạt động
-                        if (empty($holidayProducts)) {
-                            $fallbackProducts = Product::active()
-                                ->with(['images', 'category'])
-                                ->orderBy('created_at', 'desc')
-                                ->limit(4)
-                                ->get();
-                            $holidayProducts = $fallbackProducts->map(fn($p) => [
+            // 3. Kết xuất thông tin ngày lễ động kết hợp với sản phẩm liên quan tương ứng
+            $data = collect($aiHolidays)
+                ->map(function ($item) use ($dbProducts) {
+                    $holidayProductIds = $item['product_ids'] ?? [];
+                    
+                    $holidayProducts = [];
+                    foreach ($holidayProductIds as $id) {
+                        if (isset($dbProducts[$id])) {
+                            $p = $dbProducts[$id];
+                            $holidayProducts[] = [
                                 'id'    => $p->id,
                                 'name'  => $p->name,
                                 'slug'  => $p->slug,
                                 'price' => (int) $p->price,
                                 'image' => $p->primary_image_url,
-                            ])->values()->toArray();
+                            ];
                         }
+                    }
 
-                        return [
-                            'id'          => null,
-                            'name'        => $item['name'] ?? '',
-                            'lunarLabel'  => $item['lunarLabel'] ?? '',
-                            'nextDate'    => $item['nextDate'] ?? null,
-                            'description' => $item['description'] ?? '',
-                            'products'    => $holidayProducts,
-                        ];
-                    })
-                    ->toArray();
-            });
+                    // Fallback nếu AI không tìm thấy sản phẩm phù hợp hoặc sản phẩm đó không hoạt động
+                    if (empty($holidayProducts)) {
+                        $fallbackProducts = Product::active()
+                            ->with(['images', 'category'])
+                            ->orderBy('created_at', 'desc')
+                            ->limit(4)
+                            ->get();
+                        $holidayProducts = $fallbackProducts->map(fn($p) => [
+                            'id'    => $p->id,
+                            'name'  => $p->name,
+                            'slug'  => $p->slug,
+                            'price' => (int) $p->price,
+                            'image' => $p->primary_image_url,
+                        ])->values()->toArray();
+                    }
+
+                    return [
+                        'id'          => null,
+                        'name'        => $item['name'] ?? '',
+                        'lunarLabel'  => $item['lunarLabel'] ?? '',
+                        'nextDate'    => $item['nextDate'] ?? null,
+                        'description' => $item['description'] ?? '',
+                        'products'    => $holidayProducts,
+                    ];
+                })
+                ->toArray();
+
+            // Chỉ lưu vào cache khi thành công và có dữ liệu
+            Cache::put('smart_calendar_v5', $data, 43200);
 
             return response()->json($data);
         } catch (\Exception $e) {
