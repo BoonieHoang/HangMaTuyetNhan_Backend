@@ -143,7 +143,8 @@ Route::middleware(['auth:sanctum', 'check.account.status', 'role:admin'])->prefi
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('products', ProductController::class);
     Route::apiResource('rituals', \App\Http\Controllers\Api\Admin\RitualController::class);
-    Route::patch('/holidays/{id}', [HolidayController::class, 'update']);
+    Route::apiResource('holidays', HolidayController::class)->except(['index']);
+
 
     Route::get('/orders', [AdminOrderController::class, 'index']);
     Route::patch('/orders', [AdminOrderController::class, 'updateBatch']);
