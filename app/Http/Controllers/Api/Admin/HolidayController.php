@@ -20,13 +20,19 @@ class HolidayController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
-            'ritual_slug' => 'nullable|string|max:255',
+            'ritual_slug' => 'nullable|array',
+            'ritual_slug.*.slug'  => 'required|string',
+            'ritual_slug.*.title' => 'required|string',
         ]);
 
-        $holiday = Holiday::create($validated);
+        $holiday = Holiday::create([
+            'name'        => $request->name,
+            'description' => $request->description,
+            'ritual_slug' => $request->ritual_slug ?? [],
+        ]);
 
         return response()->json($holiday, 201);
     }
@@ -35,15 +41,21 @@ class HolidayController extends Controller
     {
         $holiday = Holiday::findOrFail($id);
 
-        $validated = $request->validate([
+        $request->validate([
             'name'        => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
-            'ritual_slug' => 'nullable|string|max:255',
+            'ritual_slug' => 'nullable|array',
+            'ritual_slug.*.slug'  => 'required|string',
+            'ritual_slug.*.title' => 'required|string',
         ]);
 
-        $holiday->update($validated);
+        $holiday->update([
+            'name'        => $request->input('name', $holiday->name),
+            'description' => $request->description,
+            'ritual_slug' => $request->ritual_slug ?? [],
+        ]);
 
-        return response()->json($holiday);
+        return response()->json($holiday->fresh());
     }
 
     public function destroy($id)
