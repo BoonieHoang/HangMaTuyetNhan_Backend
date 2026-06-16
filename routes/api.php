@@ -34,6 +34,7 @@ Route::get('/products/{slug}', [CustomerProductController::class, 'show']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/holidays', [HolidayController::class, 'index']);
 Route::get('/purposes', [PurposeController::class, 'index']);
+
 Route::get('/rituals', [App\Http\Controllers\Api\Customer\RitualController::class, 'index']);
 Route::get('/rituals/{slug}', [App\Http\Controllers\Api\Customer\RitualController::class, 'show']);
 Route::post('/chatbot', [\App\Http\Controllers\Api\Customer\ChatbotController::class, 'chat'])->middleware('throttle:20,1');
@@ -142,6 +143,7 @@ Route::middleware(['auth:sanctum', 'check.account.status', 'role:admin'])->prefi
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('products', ProductController::class);
     Route::apiResource('rituals', \App\Http\Controllers\Api\Admin\RitualController::class);
+    Route::patch('/holidays/{id}', [HolidayController::class, 'update']);
 
     Route::get('/orders', [AdminOrderController::class, 'index']);
     Route::patch('/orders', [AdminOrderController::class, 'updateBatch']);
