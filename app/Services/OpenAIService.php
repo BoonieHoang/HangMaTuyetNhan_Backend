@@ -30,7 +30,7 @@ class OpenAIService
     {
         return Cache::remember('chatbot_product_catalog', 3600, function () {
             return Product::active()
-                ->with(['category', 'holidays', 'purposes'])
+                ->with(['category', 'holidays'])
                 ->get()
                 ->map(fn($p) => [
                     'id'       => $p->id,
@@ -39,7 +39,7 @@ class OpenAIService
                     'price'    => (int) $p->price,
                     'category' => $p->category?->name ?? '',
                     'holidays' => $p->holidays->pluck('name')->toArray(),
-                    'purposes' => $p->purposes->pluck('name')->toArray(),
+
                     'image'    => $p->primary_image_url,
                 ])
                 ->toArray();
@@ -54,8 +54,7 @@ class OpenAIService
         $lines = [];
         foreach ($catalog as $p) {
             $dip  = implode(', ', $p['holidays']) ?: 'Đa dụng';
-            $muc  = $p['purposes'] ? ' | Mục đích: ' . implode(', ', $p['purposes']) : '';
-            $lines[] = "[{$p['id']}] {$p['name']} | {$p['price']}đ | {$p['category']} | Dịp: {$dip}{$muc}";
+            $lines[] = "[{$p['id']}] {$p['name']} | {$p['price']}đ | {$p['category']} | Dịp: {$dip}";
         }
         return implode("\n", $lines);
     }

@@ -24,8 +24,7 @@ class UpdateProductRequest extends FormRequest
             'stock' => 'nullable|integer|min:0',
             'holiday_ids' => 'nullable|array',
             'holiday_ids.*' => 'exists:holidays,id',
-            'purpose_ids' => 'nullable|array',
-            'purpose_ids.*' => 'exists:purposes,id',
+
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ];

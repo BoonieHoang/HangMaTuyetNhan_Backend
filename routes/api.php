@@ -15,7 +15,7 @@ use App\Http\Controllers\Api\Admin\HolidayController;
 use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\Admin\PaymentController;
 use App\Http\Controllers\Api\Admin\ProductController;
-use App\Http\Controllers\Api\Admin\PurposeController;
+
 use App\Http\Controllers\Api\Admin\SystemConfigController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\PayOSWebhookController;
@@ -33,7 +33,7 @@ Route::get('/products', [CustomerProductController::class, 'index']);
 Route::get('/products/{slug}', [CustomerProductController::class, 'show']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/holidays', [HolidayController::class, 'index']);
-Route::get('/purposes', [PurposeController::class, 'index']);
+
 
 Route::get('/rituals', [App\Http\Controllers\Api\Customer\RitualController::class, 'index']);
 Route::get('/rituals/{slug}', [App\Http\Controllers\Api\Customer\RitualController::class, 'show']);

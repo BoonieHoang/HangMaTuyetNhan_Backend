@@ -57,10 +57,7 @@ class Product extends Model
         return $this->belongsToMany(Holiday::class, 'product_holiday');
     }
 
-    public function purposes()
-    {
-        return $this->belongsToMany(Purpose::class, 'product_purpose');
-    }
+
 
     // ─── Scopes ────────────────────────────────────────────────────────────────
 
@@ -100,15 +97,7 @@ class Product extends Model
         return $query;
     }
 
-    public function scopeFilterPurpose($query, $purposeId)
-    {
-        if ($purposeId) {
-            return $query->whereHas('purposes', function($q) use ($purposeId) {
-                $q->where('purposes.id', $purposeId);
-            });
-        }
-        return $query;
-    }
+
 
     public function scopeFilterPrice($query, $min = null, $max = null)
     {

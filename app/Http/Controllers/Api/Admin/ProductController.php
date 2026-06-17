@@ -23,7 +23,7 @@ class ProductController extends Controller
 
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'images', 'holidays', 'purposes']);
+        $query = Product::with(['category', 'images', 'holidays']);
 
         if ($request->filled('category_id')) {
             $query->filterCategory($request->category_id);
@@ -33,9 +33,7 @@ class ProductController extends Controller
             $query->filterHoliday($request->holiday_id);
         }
 
-        if ($request->filled('purpose_id')) {
-            $query->filterPurpose($request->purpose_id);
-        }
+
 
         if ($request->filled('search')) {
             $query->search($request->search);
@@ -70,16 +68,14 @@ class ProductController extends Controller
         if ($request->has('holiday_ids')) {
             $product->holidays()->sync($request->holiday_ids);
         }
-        if ($request->has('purpose_ids')) {
-            $product->purposes()->sync($request->purpose_ids);
-        }
 
-        return new ProductResource($product->load(['category', 'images', 'holidays', 'purposes']));
+
+        return new ProductResource($product->load(['category', 'images', 'holidays']));
     }
 
     public function show($id)
     {
-        $product = Product::with(['category', 'images', 'holidays', 'purposes'])->findOrFail($id);
+        $product = Product::with(['category', 'images', 'holidays'])->findOrFail($id);
         return new ProductResource($product);
     }
 
@@ -100,11 +96,9 @@ class ProductController extends Controller
         if ($request->has('holiday_ids')) {
             $product->holidays()->sync($request->holiday_ids);
         }
-        if ($request->has('purpose_ids')) {
-            $product->purposes()->sync($request->purpose_ids);
-        }
 
-        return new ProductResource($product->load(['category', 'images', 'holidays', 'purposes']));
+
+        return new ProductResource($product->load(['category', 'images', 'holidays']));
     }
 
     public function destroy($id)
@@ -150,7 +144,7 @@ class ProductController extends Controller
             ]);
         }
 
-        return new ProductResource($product->load(['category', 'images', 'holidays', 'purposes']));
+        return new ProductResource($product->load(['category', 'images', 'holidays']));
     }
 
     public function deleteImage($id, $imageId)

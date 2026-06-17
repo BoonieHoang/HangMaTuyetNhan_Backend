@@ -19,9 +19,7 @@ class ProductResource extends JsonResource
             'holidays' => $this->whenLoaded('holidays', function() {
                 return $this->holidays->map(fn($h) => ['id' => $h->id, 'name' => $h->name]);
             }),
-            'purposes' => $this->whenLoaded('purposes', function() {
-                return $this->purposes->map(fn($p) => ['id' => $p->id, 'name' => $p->name]);
-            }),
+
             'description' => $this->description,
             'is_active' => $this->is_active,
             'views' => $this->views,

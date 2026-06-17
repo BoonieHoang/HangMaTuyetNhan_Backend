@@ -12,7 +12,7 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::active()->with(['category', 'images', 'holidays', 'purposes']);
+        $query = Product::active()->with(['category', 'images', 'holidays']);
 
         if ($request->filled('search')) {
             $query->search($request->search);
@@ -26,9 +26,7 @@ class ProductController extends Controller
             $query->filterHoliday($request->holiday_id);
         }
 
-        if ($request->filled('purpose_id')) {
-            $query->filterPurpose($request->purpose_id);
-        }
+
 
         if ($request->filled('price_min')) {
             $query->filterPrice($request->price_min, null);
@@ -74,7 +72,7 @@ class ProductController extends Controller
     public function show($slug)
     {
         $product = Product::active()
-            ->with(['category', 'images', 'holidays', 'purposes'])
+            ->with(['category', 'images', 'holidays'])
             ->where('slug', $slug)
             ->firstOrFail();
         
