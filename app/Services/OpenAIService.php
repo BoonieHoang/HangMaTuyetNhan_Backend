@@ -253,21 +253,21 @@ PROMPT;
         // Tính ngày âm lịch hôm nay chính xác theo GMT+7
         $todayStr      = $this->lunarService->todayPromptString();
         $lunarToday    = $this->lunarService->today();
-        $tomorrowSolar = \Carbon\Carbon::tomorrow('Asia/Ho_Chi_Minh')->format('d/m/Y');
+        $todaySolar    = \Carbon\Carbon::now('Asia/Ho_Chi_Minh')->format('d/m/Y');
 
         $catalog      = $this->getProductCatalog();
         $catalogLines = $this->buildCatalogLines($catalog);
 
         $prompt = "Hệ thống đã tính chính xác: {$todayStr} (múi giờ GMT+7, Hà Nội).\n"
-                . "Ngày mai dương lịch là {$tomorrowSolar}.\n"
+                . "Ngày hôm nay dương lịch là {$todaySolar}.\n"
                 . "TUYỆT ĐỐI KHÔNG tự tính lại ngày âm lịch hôm nay. Hãy dùng đúng thông tin trên.\n\n"
                 . "Đây là danh mục sản phẩm của cửa hàng đồ lễ Tuyết Nhàn:\n"
                 . "{$catalogLines}\n\n"
-                . "Hãy đề cử danh sách gồm đúng {$limit} ngày lễ truyền thống Việt Nam theo lịch âm sắp tới gần nhất, bắt đầu từ ngày mai ({$tomorrowSolar}) trở đi.\n"
-                . "Nếu hôm nay (âm lịch {$lunarToday['day']}/{$lunarToday['month']}) CHÍNH LÀ một ngày lễ lớn (ví dụ Tết Đoan Ngọ 5/5, Rằm, Mùng Một...) thì ngày lễ ĐÓ ĐÃ LÀ HÔM NAY — hãy tìm ngày lễ tiếp theo SAU ngày đó.\n"
+                . "Hãy đề cử danh sách gồm đúng {$limit} ngày lễ truyền thống Việt Nam theo lịch âm sắp tới gần nhất, bắt đầu từ HÔM NAY ({$todaySolar}) trở đi.\n"
+                . "Nếu HÔM NAY chính là ngày diễn ra một ngày lễ lớn (ví dụ mùng 5 tháng 5 Âm lịch là Tết Đoan Ngọ, hoặc ngày Rằm, Mùng Một...), hãy đưa ngày lễ đó vào danh sách và đặt `nextDate` chính là ngày hôm nay (format YYYY-MM-DD). Đừng bỏ qua nó.\n"
                 . "Với mỗi ngày lễ, hãy trả về:\n"
                 . "1. name: Tên ngày lễ (ví dụ: 'Rằm tháng Năm', 'Rằm tháng Bảy (cúng Cô Hồn)', 'Mùng Một tháng Sáu').\n"
-                . "2. nextDate: ngày dương lịch tiếp theo tương ứng của ngày lễ đó (từ ngày mai trở đi), định dạng YYYY-MM-DD.\n"
+                . "2. nextDate: ngày dương lịch tiếp theo tương ứng của ngày lễ đó (từ hôm nay trở đi), định dạng YYYY-MM-DD.\n"
                 . "3. lunarLabel: nhãn ngày âm lịch tương ứng, ví dụ '15/05 Âm lịch', '01/06 Âm lịch'.\n"
                 . "4. description: 1-2 câu mô tả ngắn gọn ý nghĩa ngày lễ và gợi ý lễ vật cần chuẩn bị.\n"
                 . "5. product_ids: mảng chứa từ 2 đến 4 ID sản phẩm phù hợp nhất với ngày lễ này từ danh mục sản phẩm trên.";
