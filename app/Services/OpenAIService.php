@@ -252,8 +252,47 @@ PROMPT;
 
         // Tính ngày âm lịch hôm nay chính xác theo GMT+7
         $todayStr      = $this->lunarService->todayPromptString();
-        $lunarToday    = $this->lunarService->today();
         $todaySolar    = \Carbon\Carbon::now('Asia/Ho_Chi_Minh')->format('d/m/Y');
+        
+        $start = \Carbon\Carbon::now('Asia/Ho_Chi_Minh')->startOfDay();
+        $upcomingMilestones = [];
+        
+        $monthNames = [
+            1 => 'Giêng', 2 => 'Hai', 3 => 'Ba', 4 => 'Tư', 5 => 'Năm', 6 => 'Sáu',
+            7 => 'Bảy', 8 => 'Tám', 9 => 'Chín', 10 => 'Mười', 11 => 'Mười Một', 12 => 'Chạp'
+        ];
+
+        // Duyệt qua tối đa 120 ngày để tìm các mốc Mùng Một và Rằm tiếp theo (không dùng dữ liệu ngày lễ hardcode)
+        for ($i = 0; $i < 120; $i++) {
+            $check = $start->copy()->addDays($i);
+            $lunar = $this->lunarService->gregorianToLunar($check);
+            
+            $name = null;
+            if ($lunar['day'] === 1) {
+                $name = "Mùng Một tháng " . ($monthNames[$lunar['month']] ?? $lunar['month']);
+            } elseif ($lunar['day'] === 15) {
+                $name = "Rằm tháng " . ($monthNames[$lunar['month']] ?? $lunar['month']);
+            }
+            
+            if ($name !== null) {
+                $upcomingMilestones[] = [
+                    'name'       => $name,
+                    'lunarLabel' => sprintf('%02d/%02d Âm lịch', $lunar['day'], $lunar['month']),
+                    'solarDate'  => $check->format('d/m/Y'),
+                    'gregorian'  => $check->format('Y-m-d'),
+                ];
+                if (count($upcomingMilestones) >= 4) {
+                    break;
+                }
+            }
+        }
+
+        $milestoneLines = [];
+        foreach ($upcomingMilestones as $idx => $m) {
+            $seq = $idx + 1;
+            $milestoneLines[] = "{$seq}. {$m['name']} | Ngày âm: {$m['lunarLabel']} | Ngày dương tương ứng: {$m['solarDate']} ({$m['gregorian']})";
+        }
+        $milestoneText = implode("\n", $milestoneLines);
 
         $catalog      = $this->getProductCatalog();
         $catalogLines = $this->buildCatalogLines($catalog);
@@ -263,15 +302,15 @@ PROMPT;
                 . "TUYỆT ĐỐI KHÔNG tự tính lại ngày âm lịch hôm nay. Hãy dùng đúng thông tin trên.\n\n"
                 . "Đây là danh mục sản phẩm của cửa hàng đồ lễ Tuyết Nhàn:\n"
                 . "{$catalogLines}\n\n"
-                . "Hãy đề cử danh sách gồm đúng {$limit} ngày lễ truyền thống Việt Nam theo lịch âm sắp tới gần nhất, bắt đầu từ HÔM NAY ({$todaySolar}) trở đi.\n"
-                . "Lưu ý cực kỳ quan trọng về trình tự thời gian:\n"
-                . "1. Ngày Mùng Một và ngày Rằm (ngày 15) của mỗi tháng Âm lịch xảy ra hàng tháng và đều là ngày thắp hương dâng lễ thờ cúng tổ tiên truyền thống Việt Nam.\n"
-                . "2. Hôm nay là ngày 05/05 Âm lịch (Tết Đoan Ngọ). Theo trình tự thời gian, ngày lễ âm lịch tiếp theo phải là ngày Rằm tháng Năm (15/05 Âm lịch, tương ứng dương lịch là 29/06/2026), rồi mới đến ngày Mùng Một tháng Sáu (01/06 Âm lịch, tương ứng dương lịch là 15/07/2026), rồi Rằm tháng Sáu (15/06 Âm lịch, tương ứng dương lịch là 29/07/2026).\n"
-                . "3. Hãy tính toán chính xác ngày dương lịch tương ứng (nextDate) cho các ngày lễ âm lịch này, tuyệt đối không được bỏ sót ngày Rằm tháng Năm (15/05 Âm lịch) sắp tới trong danh sách đề cử.\n\n"
-                . "Nếu HÔM NAY chính là ngày diễn ra một ngày lễ lớn (ví dụ mùng 5 tháng 5 Âm lịch là Tết Đoan Ngọ, hoặc ngày Rằm, Mùng Một...), hãy đưa ngày lễ đó vào danh sách và đặt `nextDate` chính là ngày hôm nay (format YYYY-MM-DD). Đừng bỏ qua nó.\n"
+                . "Dưới đây là danh sách các mốc thời gian Mùng Một và Rằm âm lịch tiếp theo đã được hệ thống tính toán chính xác dương lịch:\n"
+                . "{$milestoneText}\n\n"
+                . "Hãy đề cử danh sách gồm đúng {$limit} ngày lễ truyền thống Việt Nam theo lịch âm sắp tới gần nhất để hiển thị trên Smart Calendar, bắt đầu từ HÔM NAY trở đi.\n"
+                . "Lưu ý:\n"
+                . "- Nếu HÔM NAY chính là ngày diễn ra một ngày lễ lớn hoặc mốc cúng quan trọng (ví dụ mùng 5 tháng 5 Âm lịch là Tết Đoan Ngọ, hoặc ngày Rằm, Mùng Một...), hãy đưa ngày lễ đó vào danh sách đầu tiên với `nextDate` chính là ngày hôm nay. Đừng bỏ qua nó.\n"
+                . "- Hãy sử dụng chính xác các ngày dương lịch tương ứng của ngày Mùng Một và Rằm từ danh sách mốc thời gian hệ thống cung cấp ở trên để trả về thông tin.\n\n"
                 . "Với mỗi ngày lễ, hãy trả về:\n"
                 . "1. name: Tên ngày lễ (ví dụ: 'Tết Đoan Ngọ', 'Rằm tháng Năm', 'Mùng Một tháng Sáu').\n"
-                . "2. nextDate: ngày dương lịch tiếp theo tương ứng của ngày lễ đó (từ hôm nay trở đi), định dạng YYYY-MM-DD.\n"
+                . "2. nextDate: ngày dương lịch tương ứng của ngày lễ đó, định dạng YYYY-MM-DD.\n"
                 . "3. lunarLabel: nhãn ngày âm lịch tương ứng, ví dụ '15/05 Âm lịch', '01/06 Âm lịch'.\n"
                 . "4. description: 1-2 câu mô tả ngắn gọn ý nghĩa ngày lễ và gợi ý lễ vật cần chuẩn bị.\n"
                 . "5. product_ids: mảng chứa từ 2 đến 4 ID sản phẩm phù hợp nhất với ngày lễ này từ danh mục sản phẩm trên.";
