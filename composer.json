@@ -17,7 +17,7 @@
         "laravel/sanctum": "^2.14",
         "laravel/socialite": "^5.27",
         "laravel/tinker": "^2.7",
-        "luc-nham/lunar-calendar": "2.0",
+        "luc-nham/lunar-calendar": "^2.0",
         "payos/payos": "^2.0"
     },
     "require-dev": {

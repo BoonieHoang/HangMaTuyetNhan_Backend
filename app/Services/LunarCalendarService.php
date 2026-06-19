@@ -8,7 +8,7 @@ use VanTran\LunarCalendar\LunarDateTime;
 
 /**
  * Service chuyên dụng chuyển đổi Dương lịch ↔ Âm lịch Việt Nam
- * Sử dụng thư viện luc-nham/lunar-calendar (namespace VanTran\LunarCalendar)
+ * Sử dụng thư viện luc-nham/lunar-calendar v2 (namespace VanTran\LunarCalendar)
  * Tính múi giờ GMT+7 (Hà Nội) để tránh lệch ngày so với lịch Trung Quốc (GMT+8)
  */
 class LunarCalendarService
@@ -22,6 +22,8 @@ class LunarCalendarService
 
     /**
      * Chuyển đổi một ngày dương lịch (Carbon hoặc string Y-m-d) sang âm lịch Việt Nam.
+     * Trả về array: ['day' => int, 'month' => int, 'year' => int, 'label' => string]
+     * Ví dụ: ['day' => 5, 'month' => 5, 'year' => 2026, 'label' => '05/05 Âm lịch']
      */
     public function gregorianToLunar($date): array
     {
@@ -31,6 +33,7 @@ class LunarCalendarService
             $dateStr = (string) $date;
         }
 
+        // v2: dùng createFromGregorian()
         $lunar = LunarDateTime::createFromGregorian($dateStr, $this->tz);
 
         $day   = (int) $lunar->format('j');
@@ -56,15 +59,17 @@ class LunarCalendarService
 
     /**
      * Tạo chuỗi mô tả ngày âm lịch hôm nay, dùng để nhúng vào prompt AI.
-     * Ví dụ: "Hôm nay là Thứ Năm, 19/06/2026 (dương lịch) tức 05/05/2026 Âm lịch (Tết Đoan Ngọ - mùng 5 tháng 5 âm lịch)"
+     * Ví dụ: "Thứ Sáu, ngày 19/06/2026 dương lịch, tức ngày 05/05/2026 Âm lịch"
      */
     public function todayPromptString(): string
     {
         $now   = Carbon::now('Asia/Ho_Chi_Minh');
         $lunar = $this->today();
 
-        $dayNames = [0 => 'Chủ Nhật', 1 => 'Thứ Hai', 2 => 'Thứ Ba',
-                     3 => 'Thứ Tư', 4 => 'Thứ Năm', 5 => 'Thứ Sáu', 6 => 'Thứ Bảy'];
+        $dayNames = [
+            0 => 'Chủ Nhật', 1 => 'Thứ Hai', 2 => 'Thứ Ba',
+            3 => 'Thứ Tư',   4 => 'Thứ Năm', 5 => 'Thứ Sáu', 6 => 'Thứ Bảy',
+        ];
 
         $dayOfWeek = $dayNames[$now->dayOfWeek];
         $solar     = $now->format('d/m/Y');
@@ -78,7 +83,7 @@ class LunarCalendarService
      * Tìm kiếm từ ngày mai trở đi, trong vòng tối đa 400 ngày.
      * Trả về Carbon (múi giờ VN) hoặc null nếu không tìm thấy.
      */
-    public function nextGregorianDate(int $lunarDay, int $lunarMonth, bool $scanLeap = false): ?Carbon
+    public function nextGregorianDate(int $lunarDay, int $lunarMonth): ?Carbon
     {
         $start = Carbon::tomorrow('Asia/Ho_Chi_Minh')->startOfDay();
 
