@@ -1,8 +1,7 @@
 <?php
 
 namespace {
-    // Polyfill cho hàm gregoriantojd nếu extension calendar không được cài đặt (ví dụ trên môi trường Railway)
-    if (!function_exists('gregoriantojd')) {
+     if (!function_exists('gregoriantojd')) {
         function gregoriantojd(int $month, int $day, int $year): int {
             if ($month <= 2) {
                 $year -= 1;

@@ -16,7 +16,7 @@ nixPkgs = [
 
 [phases.build]
 cmds = [
-  "composer install --no-dev --optimize-autoloader",
+  "composer install --no-dev --optimize-autoloader --ignore-platform-reqs",
   "chmod +x railway-pre-deploy.sh"
 ]
 
