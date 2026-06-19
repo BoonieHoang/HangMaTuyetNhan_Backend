@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Product;
+use App\Services\LunarCalendarService;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -12,12 +13,14 @@ class OpenAIService
     protected $client;
     protected $apiKey;
     protected $model;
+    protected LunarCalendarService $lunarService;
 
     public function __construct()
     {
-        $this->apiKey = config('services.gemini.api_key') ?: config('services.openai.api_key');
-        $this->model  = config('services.gemini.model', 'gemini-2.5-flash');
-        $this->client = new Client([
+        $this->apiKey       = config('services.gemini.api_key') ?: config('services.openai.api_key');
+        $this->model        = config('services.gemini.model', 'gemini-2.5-flash');
+        $this->lunarService = new LunarCalendarService();
+        $this->client       = new Client([
             'base_uri' => 'https://generativelanguage.googleapis.com/v1beta/',
             'headers'  => ['Content-Type' => 'application/json'],
         ]);
@@ -75,9 +78,8 @@ class OpenAIService
 
     public function chat(array $history, string $userMessage): array
     {
-        $now  = \Carbon\Carbon::now('Asia/Ho_Chi_Minh');
-        $days = [0 => 'Chủ Nhật', 1 => 'Thứ Hai', 2 => 'Thứ Ba', 3 => 'Thứ Tư', 4 => 'Thứ Năm', 5 => 'Thứ Sáu', 6 => 'Thứ Bảy'];
-        $dateStr = $days[$now->dayOfWeek] . ', ngày ' . $now->format('d/m/Y');
+        // Tính ngày âm lịch chính xác theo GMT+7 bằng thư viện chuyên dụng
+        $todayStr = $this->lunarService->todayPromptString();
 
         $catalog      = $this->getProductCatalog();
         $catalogLines = $this->buildCatalogLines($catalog);
@@ -85,8 +87,9 @@ class OpenAIService
         $systemPrompt = <<<PROMPT
 Bạn là "Trợ lý Smart Calendar" của cửa hàng đồ lễ Tuyết Nhàn — chuyên tư vấn sản phẩm mã vàng, đồ lễ phẩm và nghi lễ thờ cúng truyền thống Việt Nam.
 
-=== NGÀY HIỆN TẠI ===
-Hôm nay là {$dateStr} (dương lịch). Hãy tự tính ngày âm lịch tương ứng chính xác.
+=== NGÀY HIỆN TẠI (ĐÃ ĐƯỢC TÍNH CHÍNH XÁC BỞI HỆ THỐNG) ===
+Hôm nay là {$todayStr}.
+ĐÂY LÀ THÔNG TIN CHÍNH XÁC. TUYỆT ĐỐI KHÔNG tự tính lại ngày âm lịch. Hãy sử dụng đúng ngày âm lịch này khi trả lời.
 
 === DANH MỤC SẢN PHẨM ===
 Format: [ID] Tên | Giá | Danh mục | Dịp phù hợp
@@ -94,9 +97,11 @@ Format: [ID] Tên | Giá | Danh mục | Dịp phù hợp
 
 === NHIỆM VỤ ===
 1. Trả lời về ngày lễ âm lịch, ý nghĩa nghi lễ, lễ vật, và tư vấn sản phẩm.
-2. Khi hỏi về dịp lễ (Rằm, Mùng Một, Tết Thanh Minh, Tháng Cô Hồn...): giải thích ý nghĩa, gợi ý lễ vật, chọn 2-4 sản phẩm phù hợp từ danh mục.
-3. Khi hỏi mua sắm: gợi ý sản phẩm liên quan từ danh mục.
-4. Từ chối lịch sự nếu ngoài chủ đề tâm linh / thờ cúng.
+2. Khi người dùng hỏi "hôm nay là ngày mấy âm" hoặc "ngày âm hôm nay": trả lời đúng theo ngày âm lịch đã cung cấp ở trên.
+3. Khi hỏi về dịp lễ sắp tới: dựa vào ngày âm lịch hôm nay để xác định ngày lễ nào ĐÃ QUA và ngày lễ nào SẮP TỚI. KHÔNG báo người dùng rằng ngày lễ hôm nay là "ngày mai".
+4. Khi hỏi về dịp lễ (Rằm, Mùng Một, Tết Đoan Ngọ, Tháng Cô Hồn...): giải thích ý nghĩa, gợi ý lễ vật, chọn 2-4 sản phẩm phù hợp từ danh mục.
+5. Khi hỏi mua sắm: gợi ý sản phẩm liên quan từ danh mục.
+6. Từ chối lịch sự nếu ngoài chủ đề tâm linh / thờ cúng.
 
 === ĐỊNH DẠNG PHẢN HỒI ===
 Luôn trả về JSON hợp lệ, KHÔNG thêm văn bản ngoài JSON:
@@ -178,16 +183,19 @@ PROMPT;
     {
         if (empty($holidays) || empty($this->apiKey)) return [];
 
-        $now      = \Carbon\Carbon::now('Asia/Ho_Chi_Minh');
-        $dateStr  = $now->format('d/m/Y');
-        $list     = collect($holidays)->map(fn($h) => ['id' => $h['id'], 'name' => $h['name']])->toJson(JSON_UNESCAPED_UNICODE);
+        // Tính ngày âm lịch hôm nay bằng thư viện chuyên dụng (GMT+7 chính xác)
+        $todayStr    = $this->lunarService->todayPromptString();
+        $tomorrowSolar = \Carbon\Carbon::tomorrow('Asia/Ho_Chi_Minh')->format('d/m/Y');
+        $list        = collect($holidays)->map(fn($h) => ['id' => $h['id'], 'name' => $h['name']])->toJson(JSON_UNESCAPED_UNICODE);
 
-        $prompt = "Hôm nay là {$dateStr} (dương lịch). Đây là danh sách các ngày lễ truyền thống từ cơ sở dữ liệu của cửa hàng đồ lễ Tuyết Nhàn:\n{$list}\n\n"
-                . "Với MỖI ngày lễ trên, hãy tính toán chính xác và trả về:\n"
-                . "1. nextDate: ngày dương lịch gần nhất sắp đến (từ ngày mai trở đi), format YYYY-MM-DD.\n"
+        $prompt = "Hệ thống đã tính chính xác: {$todayStr}. Ngày mai dương lịch là {$tomorrowSolar}.\n"
+                . "Đây là danh sách các ngày lễ truyền thống từ cơ sở dữ liệu của cửa hàng đồ lễ Tuyết Nhàn:\n{$list}\n\n"
+                . "TUYỆT ĐỐI KHÔNG tự tính lại ngày âm lịch hôm nay. Hãy dùng đúng thông tin trên.\n"
+                . "Với MỖI ngày lễ trên, hãy trả về:\n"
+                . "1. nextDate: ngày dương lịch tiếp theo của ngày lễ đó (từ ngày mai {$tomorrowSolar} trở đi), format YYYY-MM-DD.\n"
                 . "2. lunarLabel: nhãn âm lịch ngắn gọn, ví dụ '15/07 Âm lịch' hoặc '01/01 Âm lịch'.\n"
                 . "3. description: 1-2 câu mô tả ý nghĩa ngày lễ và gợi ý cần chuẩn bị gì.\n"
-                . "Lưu ý: Mùng Một và Rằm xảy ra hàng tháng — hãy tính tháng âm lịch sắp tới gần nhất.";
+                . "Lưu ý: Mùng Một và Rằm xảy ra hàng tháng — hãy tính tháng âm lịch sắp tới gần nhất tính từ ngày mai.";
 
         try {
             $url      = "models/{$this->model}:generateContent?key=" . $this->apiKey;
@@ -242,21 +250,25 @@ PROMPT;
     {
         if (empty($this->apiKey)) return [];
 
-        $now     = \Carbon\Carbon::now('Asia/Ho_Chi_Minh');
-        $dateStr = $now->format('d/m/Y');
+        // Tính ngày âm lịch hôm nay chính xác theo GMT+7
+        $todayStr      = $this->lunarService->todayPromptString();
+        $lunarToday    = $this->lunarService->today();
+        $tomorrowSolar = \Carbon\Carbon::tomorrow('Asia/Ho_Chi_Minh')->format('d/m/Y');
 
         $catalog      = $this->getProductCatalog();
         $catalogLines = $this->buildCatalogLines($catalog);
 
-        $prompt = "Hôm nay là ngày dương lịch: {$dateStr}.\n"
+        $prompt = "Hệ thống đã tính chính xác: {$todayStr} (múi giờ GMT+7, Hà Nội).\n"
+                . "Ngày mai dương lịch là {$tomorrowSolar}.\n"
+                . "TUYỆT ĐỐI KHÔNG tự tính lại ngày âm lịch hôm nay. Hãy dùng đúng thông tin trên.\n\n"
                 . "Đây là danh mục sản phẩm của cửa hàng đồ lễ Tuyết Nhàn:\n"
                 . "{$catalogLines}\n\n"
-                . "Hãy đề cử danh sách gồm đúng {$limit} ngày lễ truyền thống Việt Nam theo lịch âm sắp tới gần nhất (bắt đầu từ ngày hôm nay trở đi).\n"
-                . "Lưu ý bao gồm cả ngày Rằm hoặc Mùng Một âm lịch sắp tới gần nhất nếu nó là ngày cúng lễ quan trọng tiếp theo.\n"
+                . "Hãy đề cử danh sách gồm đúng {$limit} ngày lễ truyền thống Việt Nam theo lịch âm sắp tới gần nhất, bắt đầu từ ngày mai ({$tomorrowSolar}) trở đi.\n"
+                . "Nếu hôm nay (âm lịch {$lunarToday['day']}/{$lunarToday['month']}) CHÍNH LÀ một ngày lễ lớn (ví dụ Tết Đoan Ngọ 5/5, Rằm, Mùng Một...) thì ngày lễ ĐÓ ĐÃ LÀ HÔM NAY — hãy tìm ngày lễ tiếp theo SAU ngày đó.\n"
                 . "Với mỗi ngày lễ, hãy trả về:\n"
-                . "1. name: Tên ngày lễ (ví dụ: 'Tết Đoan Ngọ', 'Rằm tháng Bảy (cúng Cô Hồn)', 'Mùng Một hàng tháng').\n"
-                . "2. nextDate: ngày dương lịch tiếp theo tương ứng của ngày lễ đó, định dạng YYYY-MM-DD.\n"
-                . "3. lunarLabel: nhãn ngày âm lịch tương ứng, ví dụ '05/05 Âm lịch', '15/07 Âm lịch'.\n"
+                . "1. name: Tên ngày lễ (ví dụ: 'Rằm tháng Năm', 'Rằm tháng Bảy (cúng Cô Hồn)', 'Mùng Một tháng Sáu').\n"
+                . "2. nextDate: ngày dương lịch tiếp theo tương ứng của ngày lễ đó (từ ngày mai trở đi), định dạng YYYY-MM-DD.\n"
+                . "3. lunarLabel: nhãn ngày âm lịch tương ứng, ví dụ '15/05 Âm lịch', '01/06 Âm lịch'.\n"
                 . "4. description: 1-2 câu mô tả ngắn gọn ý nghĩa ngày lễ và gợi ý lễ vật cần chuẩn bị.\n"
                 . "5. product_ids: mảng chứa từ 2 đến 4 ID sản phẩm phù hợp nhất với ngày lễ này từ danh mục sản phẩm trên.";
 

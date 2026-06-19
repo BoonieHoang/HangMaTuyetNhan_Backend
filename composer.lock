@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c84ac89f8790e96bcc5cb5e8402a15ad",
+    "content-hash": "9d7ddd341fa97a3680488993974c510e",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -2486,6 +2486,52 @@
                 "source": "https://github.com/thephpleague/oauth1-client/tree/v1.11.0"
             },
             "time": "2024-12-10T19:59:05+00:00"
+        },
+        {
+            "name": "luc-nham/lunar-calendar",
+            "version": "2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/luc-nham/lunar-calendar.git",
+                "reference": "ea6a7c58bcf2cd5058bc7b2f1e82be4b3b7ebf4a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/luc-nham/lunar-calendar/zipball/ea6a7c58bcf2cd5058bc7b2f1e82be4b3b7ebf4a",
+                "reference": "ea6a7c58bcf2cd5058bc7b2f1e82be4b3b7ebf4a",
+                "shasum": ""
+            },
+            "require-dev": {
+                "brick/varexporter": "^0.3.8",
+                "phpunit/phpunit": "^10.0",
+                "symfony/console": "^6.2"
+            },
+            "bin": [
+                "bin/lunar-calendar",
+                "bin/lunar"
+            ],
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "VanTran\\LunarCalendar\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "vantran445",
+                    "email": "CaoVan.Info@gmail.com"
+                }
+            ],
+            "description": "Thư viện PHP Âm lịch Việt Nam",
+            "support": {
+                "issues": "https://github.com/luc-nham/lunar-calendar/issues",
+                "source": "https://github.com/luc-nham/lunar-calendar/tree/2.0.0"
+            },
+            "time": "2023-05-11T12:20:11+00:00"
         },
         {
             "name": "monolog/monolog",
