@@ -16,7 +16,7 @@ class OpenAIService
     public function __construct()
     {
         $this->apiKey = config('services.gemini.api_key') ?: config('services.openai.api_key');
-        $this->model  = config('services.gemini.model', 'gemini-flash-latest');
+        $this->model  = config('services.gemini.model', 'gemini-2.5-flash');
         $this->client = new Client([
             'base_uri' => 'https://generativelanguage.googleapis.com/v1beta/',
             'headers'  => ['Content-Type' => 'application/json'],
