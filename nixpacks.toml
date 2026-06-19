@@ -10,6 +10,7 @@ nixPkgs = [
   "php82Extensions.fileinfo",
   "php82Extensions.bcmath",
   "php82Extensions.curl",
+  "php82Extensions.calendar",
   "composer"
 ]
 
