@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9d7ddd341fa97a3680488993974c510e",
+    "content-hash": "7e89833634b5430efbb8e922ac268490",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -2489,17 +2489,20 @@
         },
         {
             "name": "luc-nham/lunar-calendar",
-            "version": "2.0.0",
+            "version": "2.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/luc-nham/lunar-calendar.git",
-                "reference": "ea6a7c58bcf2cd5058bc7b2f1e82be4b3b7ebf4a"
+                "reference": "04ca262ea6eb25ab18e495eae6e726e6eadc5ffe"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/luc-nham/lunar-calendar/zipball/ea6a7c58bcf2cd5058bc7b2f1e82be4b3b7ebf4a",
-                "reference": "ea6a7c58bcf2cd5058bc7b2f1e82be4b3b7ebf4a",
+                "url": "https://api.github.com/repos/luc-nham/lunar-calendar/zipball/04ca262ea6eb25ab18e495eae6e726e6eadc5ffe",
+                "reference": "04ca262ea6eb25ab18e495eae6e726e6eadc5ffe",
                 "shasum": ""
+            },
+            "require": {
+                "php": ">=8.1"
             },
             "require-dev": {
                 "brick/varexporter": "^0.3.8",
@@ -2529,9 +2532,9 @@
             "description": "Thư viện PHP Âm lịch Việt Nam",
             "support": {
                 "issues": "https://github.com/luc-nham/lunar-calendar/issues",
-                "source": "https://github.com/luc-nham/lunar-calendar/tree/2.0.0"
+                "source": "https://github.com/luc-nham/lunar-calendar/tree/2.3.0"
             },
-            "time": "2023-05-11T12:20:11+00:00"
+            "time": "2024-09-13T03:35:44+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -9268,6 +9271,7 @@
     "prefer-lowest": false,
     "platform": {
         "php": "^8.2",
+        "ext-calendar": "*",
         "ext-pdo_mysql": "*"
     },
     "platform-dev": {},
