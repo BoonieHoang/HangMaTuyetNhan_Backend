@@ -246,7 +246,7 @@ PROMPT;
      *   - lunarLabel (e.g. "15/07 Âm lịch")
      *   - description
      */
-    public function getUpcomingLunarHolidays(int $limit = 3): array
+    public function getUpcomingLunarHolidays(int $limit = 4): array
     {
         if (empty($this->apiKey)) return [];
 
@@ -263,7 +263,7 @@ PROMPT;
         ];
 
         // Duyệt qua tối đa 120 ngày để tìm các mốc Mùng Một và Rằm tiếp theo (không dùng dữ liệu ngày lễ hardcode)
-        for ($i = 0; $i < 120; $i++) {
+        for ($i = 0; $i < 400; $i++) {
             $check = $start->copy()->addDays($i);
             $lunar = $this->lunarService->gregorianToLunar($check);
             
